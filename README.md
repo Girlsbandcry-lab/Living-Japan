@@ -2,13 +2,13 @@
 
 用于小说写作的 SillyTavern 扩展，提供地点地图、写作资料浏览和个人内容保存，支持横版、竖版、手机布局及 `{{livingjapan}}` 宏。
 
-本体版本：**v20261102** · 首都圈资料：**SDQ20261102**。
+本体版本：**v20261102.1** · 首都圈资料：**SDQ20261102.1**。
 
 ## 安装与首次使用
 
-① 在酒馆“扩展 → 安装扩展”中粘贴仓库地址：https://github.com/yyxz223-stack/Living-Japan.git 。安装完成后刷新酒馆网页。
+① 在酒馆“扩展 → 安装扩展”中粘贴仓库地址：https://github.com/Girlsbandcry-lab/Living-Japan.git 。分支或标签名留空，安装完成后刷新酒馆网页。
 
-② 从达摩悬浮按钮、魔法棒菜单或扩展设置打开 Living Japan，下载约 51 MB 的首都圈资料。等待“下载与校验完成”后点击“开始使用”。首都圈是必需资料，之后不能停用或移除。
+② 从达摩悬浮按钮、魔法棒菜单或扩展设置打开 Living Japan，下载约 67 MB 的首都圈资料。等待“下载与校验完成”后点击“开始使用”。首都圈是必需资料，之后不能停用或移除。
 
 ③ 其他大区按需下载，下载后再单独启用。停用会保留下载文件，更新也会保留此前的启用状态。无需下载 ZIP、解压或重启电脑。
 
@@ -16,7 +16,7 @@
 
 ## 当前资料范围
 
-首都圈包含 22 个行政区、**34,693 个对象**，其中有 33,759 个 Overture 源地点和 934 个结构对象，尚未覆盖首都圈全部行政区。新地点正文暂留空，可用于个人补写。
+首都圈包含 32 个已接收来源行政区、**62,575 个对象**，其中有 61,151 个 Overture 源地点和 1,424 个结构对象，尚未覆盖首都圈全部行政区。新地点正文暂留空，可用于个人补写。
 
 其他大区目前主要提供底图与公共资料，具体覆盖以资料页说明为准。新铁路计算站网尚未接入。
 
@@ -28,8 +28,8 @@
 
 ## 协作与来源
 
-- [地点资料协作](https://github.com/yyxz223-stack/Living-Japan-Places)：地点资料的编辑入口。
-- [参与说明](https://github.com/yyxz223-stack/Living-Japan/blob/source/CONTRIBUTING.md)与[源码协作与构建](https://github.com/yyxz223-stack/Living-Japan/blob/source/docs/源码协作与构建.md)：维护与开发说明。
-- [来源与许可证](https://github.com/yyxz223-stack/Living-Japan/blob/source/docs/来源与许可证.md)：数据和第三方素材的来源、许可归属。
+- [地点资料协作](https://github.com/Girlsbandcry-lab/Living-Japan-Places)：地点资料的编辑入口。
+- [参与说明](https://github.com/Girlsbandcry-lab/Living-Japan/blob/source/CONTRIBUTING.md)与[源码协作与构建](https://github.com/Girlsbandcry-lab/Living-Japan/blob/source/docs/源码协作与构建.md)：维护与开发说明。
+- [来源与许可证](https://github.com/Girlsbandcry-lab/Living-Japan/blob/source/docs/来源与许可证.md)：数据和第三方素材的来源、许可归属。
 
 来源与第三方许可随对应资料保留。项目源码许可证尚待所有者选定，素材或数据的许可证不代表整个程序的源码许可。

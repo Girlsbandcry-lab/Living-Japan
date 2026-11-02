@@ -4,9 +4,9 @@
 
 ## 编辑地点资料
 
-请进入唯一地点协作仓库 [https://github.com/yyxz223-stack/Living-Japan-Places](https://github.com/yyxz223-stack/Living-Japan-Places)。每区行政区主档与配套辅助记录在那里持续维护；在资料仓库邀请成员，不在本体仓库重复邀请。
+请进入唯一地点协作仓库 [https://github.com/Girlsbandcry-lab/Living-Japan-Places](https://github.com/Girlsbandcry-lab/Living-Japan-Places)。每区行政区主档与配套辅助记录在那里持续维护；在资料仓库邀请成员，不在本体仓库重复邀请。
 
-按行政区／对象确认范围，在工作分支提交修改并由维护者复核。随本体源码附带的行政区合同仅为本版本阅读参考，不能在这里另建可编辑地点库。当前已接收26区与已运行22区分别记录，不把资料合并当作酒馆更新。
+按行政区／对象确认范围，在工作分支提交修改并由维护者复核。随本体源码附带的行政区合同仅为本版本阅读参考，不能在这里另建可编辑地点库。当前已接收并纳入本版运行发布的32个来源区见发布状态，不把资料合并当作酒馆更新。
 
 ## 本体维护
 

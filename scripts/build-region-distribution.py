@@ -346,7 +346,7 @@ def export_framework(output, source, runtime, owners, version, catalog_url=""):
         target = framework / source_path.relative_to(ROOT)
         target.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(source_path, target)
-    if re.fullmatch(r"v[0-9]{8}", version):
+    if re.fullmatch(r"v[0-9]{8}(?:\.[0-9]+)?", version):
         extension_manifest = load_json(framework / "manifest.json")
         extension_manifest["version"] = version
         (framework / "manifest.json").write_bytes(json_bytes(extension_manifest))
@@ -416,7 +416,7 @@ def update_metadata(files, fragment, inventory, version, dependencies=()):
                 else:
                     structure_places += 1
     coverage = {"adminUnitCount": len(admin_units), "sourcePlaces": source_places, "structurePlaces": structure_places,
-                "description": f"当前含已审收 {len(admin_units)} 个行政区，{source_places:,} 个源地点、{structure_places:,} 个结构对象。" if admin_units else "当前提供底图与公共资料，尚无已审收点位。"}
+                "description": f"已接收 {len(fragment.get('runtimeSource', {}).get('districtCodes', []))} 个来源行政区，地点涉及 {len(admin_units)} 个行政范围；{source_places:,} 个源地点、{structure_places:,} 个结构对象。" if admin_units else "当前提供底图与公共资料，尚无已审收点位。"}
     return {"contentSha256": digest(json_bytes({"files": identities, "fragment": functional, "dependencies": list(dependencies)})), "components": components, "coverage": coverage}
 
 
@@ -425,7 +425,7 @@ def main():
     parser.add_argument("--output", type=Path, default=ROOT / ".local/distribution-20261031")
     release = parser.add_mutually_exclusive_group()
     release.add_argument("--version", help="Use one explicit label for a candidate or legacy build")
-    release.add_argument("--release-date", help="Release date YYYYMMDD; use body and region-specific version labels")
+    release.add_argument("--release-date", help="Release date YYYYMMDD with optional .N revision; use body and region-specific version labels")
     parser.add_argument("--refresh-framework", action="store_true")
     parser.add_argument("--runtime-root", type=Path)
     parser.add_argument("--catalog-url", default="")
@@ -434,11 +434,11 @@ def main():
     args = parser.parse_args()
     if args.release_date:
         try:
-            if not re.fullmatch(r"[0-9]{8}", args.release_date):
+            if not re.fullmatch(r"[0-9]{8}(?:\.[0-9]+)?", args.release_date):
                 raise ValueError()
-            datetime.datetime.strptime(args.release_date, "%Y%m%d")
+            datetime.datetime.strptime(args.release_date.split('.', 1)[0], "%Y%m%d")
         except ValueError:
-            parser.error("--release-date must be a valid date in YYYYMMDD form")
+            parser.error("--release-date must be a valid date in YYYYMMDD form with an optional .N revision")
     stamp = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     output = args.output.resolve()
     runtime_root = args.runtime_root.resolve() if args.runtime_root else ROOT

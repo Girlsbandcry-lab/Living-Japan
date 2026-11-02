@@ -1,6 +1,6 @@
 // LJ-EXTENSION-UPDATE: 扩展更新只调用酒馆更新接口，用户保存独立保留。
 export function createUpdateManager({ context, fetcher = globalThis.fetch, extensionName = 'Living-Japan', global: isGlobal, version } = {}) {
-  let scope, discovery, checking = null, state = { checking: false, available: false, supported: null, error: null, version: /^v\d{8}$/.test(version || '') ? version : null };
+  let scope, discovery, checking = null, state = { checking: false, available: false, supported: null, error: null, version: /^v\d{8}(?:\.\d+)?$/.test(version || '') ? version : null };
   const listeners = new Set(), getState = () => structuredClone(state);
   function publish(value) { state = { ...state, ...value }; for (const fn of listeners) { try { fn(getState()); } catch (error) { console.error('[Living Japan] 程序更新状态订阅失败', error); } } }
   async function installationScope() {

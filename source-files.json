@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "candidate": "source-v20261102",
+  "candidate": "source-v20261102.1",
   "publicationState": "release",
   "files": [
     {
@@ -56,29 +56,29 @@
       "path": "AGENTS.md",
       "origin": "AGENTS.md",
       "mode": "copied",
-      "bytes": 5986,
-      "sha256": "6e0a8c512f869d3c6b91e75a8b3bb38480f1368f1ef4602b337134580cb669a5"
+      "bytes": 5930,
+      "sha256": "83eb1b984ed207741e9d8d9fa80452b46392aebde6fddcbcc84455ef3714d518"
     },
     {
       "path": "CONTRIBUTING.md",
       "origin": "github-kit/CONTRIBUTING.md; current scope",
       "mode": "generated",
-      "bytes": 1781,
-      "sha256": "ac24c46def36dbaf83840024893b2f6650aef4189537e9b826a99dbe79e23899"
+      "bytes": 1789,
+      "sha256": "5763cdea256669bee9aa3be796684ff24c9d82c8ccebdd6564ee57e1120379c2"
     },
     {
       "path": "PROJECT_TODO.md",
       "origin": "PROJECT_TODO.md; public evidence links only",
       "mode": "generated",
-      "bytes": 5901,
-      "sha256": "572e44316d7e0c2aed4b26b8a7d3aa83283ab17d40854fefe16da20e20c85c8e"
+      "bytes": 1424,
+      "sha256": "bab02680844eae8a12549e64018f913af0dd25f7ccf10536ab74ecea51bd9f64"
     },
     {
       "path": "README.md",
       "origin": "README.md; source-role guidance",
       "mode": "generated",
-      "bytes": 2643,
-      "sha256": "602ad18f7c4fe28166993cc0a807a41ea95c0ac0de44b1e168287b546eb36086"
+      "bytes": 2706,
+      "sha256": "b753717d8196f6512936e7471f5bdff433a3f8c12580d2fa5ba206ae9ad979f9"
     },
     {
       "path": "assets/map-icons/Apache-2.0.txt",
@@ -196,50 +196,50 @@
       "path": "data/empty-runtime.json",
       "origin": "distribution-v20261102/framework/data/empty-runtime.json",
       "mode": "copied",
-      "bytes": 1496187,
-      "sha256": "045abe85df353ccfe2e389ace3c67fa4f643a70a9aa4fab14f334274f0fcd132"
+      "bytes": 1496171,
+      "sha256": "e82685ef6d0409f6cf203ab82a0283e9163ab5d8a88bbdf34a7a3b0a8f97be4f"
     },
     {
       "path": "data/region-framework.json",
       "origin": "distribution-v20261102/framework/data/region-framework.json",
       "mode": "copied",
-      "bytes": 783278,
-      "sha256": "aa8ae65524b624b045926d4155c3967264a81f3d8e7dc18e29719660cc644b49"
+      "bytes": 783264,
+      "sha256": "b8df5277b097a1a091ec6be044d968f66616de5c703fcb0ebd438a62740c8ca0"
     },
     {
       "path": "data/region-pack-source.json",
       "origin": "generated; source is not an install branch",
       "mode": "generated",
-      "bytes": 36,
-      "sha256": "8de9b64fc5965c89ce944644aa5b49612dae4ac61b3006b2503292636f212679"
+      "bytes": 136,
+      "sha256": "cbc4e74b0f8d717c5b8666b0e9e7ae0259d7f5badd57b438d19cee309953d6ae"
     },
     {
       "path": "docs/安装与恢复.md",
       "origin": "docs/安装与恢复.md",
       "mode": "copied",
-      "bytes": 3106,
-      "sha256": "2cdc15fc8333d44f612e058412074fc5fc1a6afd1c957c2b7c7c5dc2e5c8356a"
+      "bytes": 3155,
+      "sha256": "506fd0fbf1fb94454b4a912c6895039692b877572c87b1d51b3176578d9c4fbd"
     },
     {
       "path": "docs/来源与许可证.md",
       "origin": "generated",
       "mode": "generated",
       "bytes": 942,
-      "sha256": "7a3ad625ccc0fbedd86eee05be76d476211228d43b4c5f38448651abaa5d3cc2"
+      "sha256": "2b75bac2d46cb9a9ebbaf71610dbd59f373ff74bf4195cf122c383a354acc460"
     },
     {
       "path": "docs/源码协作与构建.md",
       "origin": "generated scope; dependency boundaries",
       "mode": "generated",
-      "bytes": 4250,
-      "sha256": "de8dbffe3ffe272ebba1ce04d14066aa20771fb2e42b87103950dc195e5db620"
+      "bytes": 4236,
+      "sha256": "461477b1bca5cf4995e7034fc41a6abdfa59502ed956a5f76d441c578f8d894d"
     },
     {
       "path": "docs/验证说明.md",
       "origin": "generated; scoped verification",
       "mode": "generated",
-      "bytes": 5679,
-      "sha256": "0276391f1807fdd10289fe3116561cf3ff1458c928f1228f791fe62cc7313f0a"
+      "bytes": 5905,
+      "sha256": "8cc230d3939e6da7633aaabb358d672b396cda801f5ea20d42ee1d42ac91dbf3"
     },
     {
       "path": "index.js",
@@ -252,8 +252,8 @@
       "path": "manifest.json",
       "origin": "manifest.json",
       "mode": "copied",
-      "bytes": 280,
-      "sha256": "c149c3295ab7974781dcff8e03b8800832b7e460609138ab532c9f510b20ded8"
+      "bytes": 246,
+      "sha256": "43c0779b744ca943319b78ecef3728ddf17b6dcb1e1c17d2c1f1524244367ff2"
     },
     {
       "path": "package.json",
@@ -266,8 +266,8 @@
       "path": "scripts/build-region-distribution.py",
       "origin": "scripts/build-region-distribution.py",
       "mode": "copied",
-      "bytes": 31067,
-      "sha256": "cec07a7ade1544ff8c583c26ba44b0ac4b338a65040af53d360a5d624275ca43"
+      "bytes": 31259,
+      "sha256": "16a1edb0d04e5e85db08684ac48935da6399a95042c3f3371f15bbac41af8201"
     },
     {
       "path": "scripts/package-preview.html",
@@ -294,8 +294,8 @@
       "path": "scripts/test-region-distribution.py",
       "origin": "scripts/test-region-distribution.py",
       "mode": "copied",
-      "bytes": 18402,
-      "sha256": "7277274ce99f2333b35ab9e8defdf6bebbcfc8ddcf66c956b2acab40bfc3d489"
+      "bytes": 20646,
+      "sha256": "b61ad0f647239d64a252dc45cc2c90195ddc410242435948d191b449ce99d49a"
     },
     {
       "path": "src/app.js",
@@ -728,8 +728,8 @@
       "path": "src/updates.js",
       "origin": "src/updates.js",
       "mode": "copied",
-      "bytes": 3893,
-      "sha256": "043534345cd84bab13641e8f85a357d172176ce2b3a4e2cb72fad9b0dcf6f80d"
+      "bytes": 3903,
+      "sha256": "6e901b2664a525c897064b6cd4b8fa011f32e368b86c9af5583f9e256094642a"
     },
     {
       "path": "src/venue-material-catalog.js",
@@ -784,8 +784,8 @@
       "path": "tests/updates.test.mjs",
       "origin": "tests/updates.test.mjs",
       "mode": "copied",
-      "bytes": 4123,
-      "sha256": "1d1cac3f9d309149136b672e45a77081268fc3e84edae58641817e698584f3e2"
+      "bytes": 4668,
+      "sha256": "367f9cb9c42ad7c368737a4f6e78c8726e9173d71f03d24e65665ac15ac5343c"
     },
     {
       "path": "ui/browse.js",
@@ -938,8 +938,8 @@
       "path": "发布文件清单.md",
       "origin": "generated",
       "mode": "generated",
-      "bytes": 2132,
-      "sha256": "249ddd891472d4ad5aaaecc1d51a6449a9e39b87ae7cdafce3c71215eab6d933"
+      "bytes": 2121,
+      "sha256": "c16b3a7ad4cee718c656cb9786488b9548e1eca22705bf1b5f51f915612b4f55"
     },
     {
       "path": "工程表/行政区重建/共用/classification-contract-index.json",

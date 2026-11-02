@@ -58,7 +58,7 @@ class DistributionContracts(unittest.TestCase):
                 return {'path': name, 'bytes': target.stat().st_size, 'sha256': builder.digest(target.read_bytes()), **fields}
 
             new_rows = [{'id': 'new-gers', 'adminNodeId': 'ward-11101', 'regionCode': '11', 'source': {'namespace': 'overture'}},
-                        {'id': 'geo:new-area', 'adminNodeId': 'ward-11101', 'regionCode': '11', 'source': {'namespace': 'editorial'}}]
+                        {'id': 'geo:new-area', 'adminNodeId': 'ward-11102', 'regionCode': '11', 'source': {'namespace': 'editorial'}}]
             detail = part('canonical/rows/11101/0.json.gz', {'rows': new_rows}, count=2, regionCodes=['11'])
             light = part('canonical/index/rows/11101/0.json.gz', {'rows': new_rows}, count=2, regionCodes=['11'], detailPath=detail['path'])
             alias = part('canonical/aliases/0.json.gz', {'aliases': {'new-gers': {'id': 'new-gers', 'path': detail['path'], 'regionCode': '11'}}}, bucket=0, count=1)
@@ -131,7 +131,8 @@ class DistributionContracts(unittest.TestCase):
                 self.assertIn('data/national/' + path, manifest['files'])
             self.assertEqual(manifest['version'], '2026.11.02-candidate.1')
             self.assertEqual({k: manifest['coverage'][k] for k in ['adminUnitCount', 'sourcePlaces', 'structurePlaces']},
-                             {'adminUnitCount': 1, 'sourcePlaces': 1, 'structurePlaces': 1})
+                             {'adminUnitCount': 2, 'sourcePlaces': 1, 'structurePlaces': 1})
+            self.assertEqual(manifest['coverage']['description'], '已接收 1 个来源行政区，地点涉及 2 个行政范围；1 个源地点、1 个结构对象。')
             self.assertEqual(manifest['components']['places']['fileCount'], 1)
             self.assertGreater(manifest['components']['indexes']['fileCount'], 1)
             catalog = builder.load_json(output / 'region-packs/catalog.json')
@@ -170,6 +171,24 @@ class DistributionContracts(unittest.TestCase):
             self.assertEqual(next_date['version'], 'SDQ20261103')
             self.assertEqual(next_date['contentSha256'], dated['contentSha256'])
             self.assertEqual(next_date['components']['indexes']['sha256'], dated['components']['indexes']['sha256'])
+            for revision in ['1', '12']:
+                revised_output, revised = export('revision-' + revision, release_date='20261102.' + revision)
+                revised_catalog = builder.load_json(revised_output / 'region-packs/catalog.json')
+                body_version = 'v20261102.' + revision
+                self.assertEqual(revised_catalog['version'], body_version)
+                self.assertEqual(builder.load_json(revised_output / 'framework/manifest.json')['version'], body_version)
+                self.assertEqual(builder.load_json(revised_output / 'framework/data/region-framework.json')['version'], body_version)
+                self.assertEqual({entry['id']: entry['version'] for entry in revised_catalog['packages']},
+                                 {identity: version + '.' + revision for identity, version in expected_versions.items()})
+                for entry in revised_catalog['packages']:
+                    package = builder.load_json(revised_output / f'region-packs/manifests/{entry["id"]}.json')
+                    self.assertEqual(package['version'], entry['version'])
+                    for component in package['components'].values():
+                        self.assertEqual(component['version'], entry['version'])
+                self.assertEqual(revised_catalog['contentSha256'], dated_catalog['contentSha256'])
+                self.assertEqual(revised['chunks'], dated['chunks'])
+                self.assertEqual(revised['contentSha256'], dated['contentSha256'])
+                self.assertEqual(revised['components']['indexes']['sha256'], dated['components']['indexes']['sha256'])
             self.assertEqual(builder.load_json(root / 'manifest.json')['version'], '0.1.0')
             activation_path = runtime_root / 'data/national' / activation['path']
             updated = builder.load_json(activation_path)
@@ -183,6 +202,13 @@ class DistributionContracts(unittest.TestCase):
             missing.unlink()
             with self.assertRaises(FileNotFoundError):
                 export('missing-new-detail')
+
+    def test_release_revision_keeps_real_date_validation(self):
+        for value in ['20260230', '20260230.1', '20261102.x', '20261102.1.2']:
+            with self.subTest(value=value), patch('sys.argv', ['builder', '--release-date', value]), contextlib.redirect_stderr(io.StringIO()):
+                with self.assertRaises(SystemExit) as caught:
+                    builder.main()
+                self.assertEqual(caught.exception.code, 2)
 
     def test_geographic_resources_survive_distribution_without_rewriting_cross_region_refs(self):
         with tempfile.TemporaryDirectory() as temporary:

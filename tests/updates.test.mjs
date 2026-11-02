@@ -24,6 +24,18 @@ test('extension check and update only call host extension endpoints, leaving use
   assert.deepEqual(requests, ['/api/extensions/version', '/api/extensions/update']);
 });
 
+test('same-day revision remains visible after the host update check', async () => {
+  for (const version of ['v20261102.1', 'v20261102.12']) {
+    const manager = createUpdateManager({ global: false, version, fetcher: async () => Response.json({
+      currentCommitHash: 'abc', remoteUrl: 'https://example.test/project', isUpToDate: false,
+    }) });
+    assert.equal(manager.getState().version, version);
+    const checked = await manager.check();
+    assert.equal(checked.version, version);
+    assert.equal(checked.available, true);
+  }
+});
+
 test('ZIP installation and failed update do not claim update success', async () => {
   const zip = createUpdateManager({ global: false, fetcher: async () => Response.json({ currentBranchName: '', currentCommitHash: '', isUpToDate: true, remoteUrl: '' }) });
   assert.equal((await zip.check()).supported, false);
