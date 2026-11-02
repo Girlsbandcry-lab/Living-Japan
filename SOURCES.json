@@ -1,0 +1,172 @@
+{
+  "schemaVersion": 2,
+  "distributionVersion": "v20261102",
+  "scope": "Publication candidate of the first six accepted district batches (22 administrative units). Later receipts are not included automatically.",
+  "activePlaces": {
+    "dataset": "Overture Maps Places",
+    "release": "2026-10-21.0",
+    "url": "https://docs.overturemaps.org/guides/places/",
+    "source": "s3://overturemaps-us-west-2/release/2026-10-21.0/theme=places/type=place/*",
+    "districtCodes": [
+      "11101",
+      "11102",
+      "11104",
+      "11105",
+      "11106",
+      "11108",
+      "11109",
+      "11110",
+      "12102",
+      "12103",
+      "12104",
+      "12105",
+      "12106",
+      "14105",
+      "14107",
+      "14113",
+      "14114",
+      "14115",
+      "14116",
+      "14132",
+      "14136",
+      "14137"
+    ],
+    "acceptedBatches": 6,
+    "administrativeUnits": 22,
+    "sourcePlaces": 33759,
+    "structurePlaces": 934,
+    "totalObjects": 34693,
+    "sourceNamespace": "overture",
+    "structureNamespace": "living-japan-structure",
+    "runtimeVersion": "overture-test-3a3540090b7aef00",
+    "sourceIdentityFields": [
+      "source.sourceId",
+      "source.release",
+      "source.receiptRevision"
+    ],
+    "provenance": "Published place rows retain the Overture source ID, release and accepted receipt revision. Original provider-level sources records remain in the read-only Overture source archive and district receipts; they are not embedded as a sources.provenance_json field in this distribution.",
+    "modifications": "Accepted district decisions select source places, assign writing categories and direct parent relationships, and add 934 project-authored structural area objects. Names and adopted position corrections follow the accepted district records. No legacy map, food or clothing place catalog is merged into the active place set.",
+    "contentStatus": "Place bodies, summaries and built-in place text packages are empty. Pending and excluded source records are not active.",
+    "licenseFiles": [
+      "licenses/CDLA-Permissive-2.0.txt",
+      "licenses/Apache-2.0.txt",
+      "licenses/Foursquare-NOTICE.txt",
+      "licenses/ODbL-1.0.txt",
+      "licenses/CC0-1.0.txt"
+    ],
+    "attribution": "Overture Maps Foundation and the original providers identified in the retained Overture source records. The bundled Foursquare NOTICE and license texts are preserved."
+  },
+  "mapGeometrySources": [
+    {
+      "dataset": "OpenStreetMap Japan extract",
+      "url": "https://download.geofabrik.de/asia/japan.html",
+      "download": {
+        "file": "japan-261025.osm.pbf",
+        "url": "https://download.geofabrik.de/asia/japan-261025.osm.pbf",
+        "source_date": "2026-10-25T21:21:21Z",
+        "bytes": 2562498240,
+        "sha256": "76517093a6dbde73513056703596105526f8c3b28fc97299ee7cee548f83050b",
+        "md5": "ca88f62556e73be5f283292c24734536",
+        "publisher_md5_verified": true,
+        "license": "ODbL-1.0",
+        "publisher": "Geofabrik / OpenStreetMap contributors"
+      },
+      "license": "ODbL-1.0",
+      "usage": "Geographic background or reference only; not a source of active place records or a published station network."
+    },
+    {
+      "dataset": "MLIT administrative boundaries N03",
+      "date": "2026-01-01",
+      "url": "https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N03-2026.html",
+      "download": {
+        "file": "N03-20260101_GML.zip",
+        "url": "https://nlftp.mlit.go.jp/ksj/gml/data/N03/N03-2026/N03-20260101_GML.zip",
+        "source_date": "2026-01-01",
+        "bytes": 803201348,
+        "sha256": "1f714fca019e22e6f84012dba420384fc7b49c6ad8bd0a867ab1cfb593a78477",
+        "license": "CC-BY-4.0"
+      },
+      "license": "CC-BY-4.0",
+      "usage": "Geographic background or reference only; not a source of active place records or a published station network."
+    },
+    {
+      "dataset": "MLIT railway N02",
+      "date": "2025-12-31",
+      "url": "https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N02-2025.html",
+      "download": "https://nlftp.mlit.go.jp/ksj/gml/data/N02/N02-25/N02-25_GML.zip",
+      "sha256": "aaf76af133b2e771e538fabc4646d2e443dc1d5a67b221382a28d744e706cc9f",
+      "license": "CC-BY-4.0",
+      "usage": "Geographic background or reference only; not a source of active place records or a published station network."
+    },
+    {
+      "dataset": "MLIT bus coverage N07",
+      "date": "approximately 2022-08",
+      "url": "https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-N07-2022.html",
+      "download": {
+        "file": "N07-22_SHP.zip",
+        "url": "https://nlftp.mlit.go.jp/ksj/gml/data/N07/N07-22/N07-22_SHP.zip",
+        "source_date": "2022-08",
+        "bytes": 142690972,
+        "sha256": "e81068100a925759e4470b2e81be565dac40d1edcaa8c16da30770e4865026d4",
+        "license": "CC-BY-4.0"
+      },
+      "license": "CC-BY-4.0",
+      "usage": "Geographic background or reference only; not a source of active place records or a published station network."
+    },
+    {
+      "dataset": "MLIT bus stops P11",
+      "date": "approximately 2022-08",
+      "url": "https://nlftp.mlit.go.jp/ksj/gml/datalist/KsjTmplt-P11-2022.html",
+      "download": {
+        "file": "P11-22_SHP.zip",
+        "url": "https://nlftp.mlit.go.jp/ksj/gml/data/P11/P11-22/P11-22_SHP.zip",
+        "source_date": "2022-08",
+        "bytes": 39202472,
+        "sha256": "12132cc1c349d5d84c1ae90e7e5fff7c12a79540f4487edfae46e9f640bc1c72",
+        "license": "CC-BY-4.0"
+      },
+      "license": "CC-BY-4.0",
+      "usage": "Geographic background or reference only; not a source of active place records or a published station network."
+    }
+  ],
+  "mapGeometryInput": {
+    "name": "日本全域地图-分区数据-v3.0.0.bin",
+    "bytes": 238381344,
+    "usage": "Retained background geometry only. Original point lists and station records are removed from published base maps."
+  },
+  "osmGeometryDerivation": {
+    "name": "日本全域地图japan-261027.osm.pbf",
+    "bytes": 2563440322,
+    "sha256": "6470e8bb621687ee93e5ecf24d0cffb61f2184a0ad16d30badc2bad83fe5b031",
+    "sourceDate": "2026-10-27T21:23:59Z",
+    "derived": {
+      "manifest": "overlays-pbf-20261027/overlay-manifest.json",
+      "railwayWays": 137015,
+      "administrativeRelations": 2285,
+      "parts": 626,
+      "compressedBytes": 79129102
+    },
+    "attribution": "OpenStreetMap contributors / Geofabrik",
+    "license": "ODbL-1.0",
+    "licenseFile": "licenses/ODbL-1.0.txt",
+    "sourceUrl": "https://download.geofabrik.de/asia/japan.html",
+    "usage": "Derived railway traces and administrative geometry only. OSM place candidates are not included in the active place catalog."
+  },
+  "railwayScope": {
+    "backgroundGeometryRetained": true,
+    "legacyStationRecords": 0,
+    "publishedOfficialStationNetwork": false,
+    "legacyRoutingEdges": 0,
+    "description": "Railway traces and line metadata are retained as geographic background. Legacy station-name catalogs, station anchors and route edges are empty. This release does not enable the separate rebuilt railway station network; Overture source places classified as stations remain ordinary Overture places."
+  },
+  "licenses": {
+    "manifest": "licenses/license-sources.json",
+    "directory": "licenses/",
+    "note": "Bundled license and attribution files are retained unchanged. This source inventory documents the candidate assets; it is not a new legal determination or a statement that the complete original provider provenance is bundled."
+  },
+  "validation": {
+    "level": "local_file_and_isolated_program_checks",
+    "realSillyTavernUserAcceptance": false,
+    "publicDownloadAcceptance": false
+  }
+}
