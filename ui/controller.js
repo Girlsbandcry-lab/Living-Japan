@@ -52,7 +52,12 @@ ui.materialEditor=createMaterialEditor(ui);
 ui.placeEditor=createPlaceEditor(ui);
 // LJ-APPROVED-WINDOW-CLOSE-20261030: connect the confirmed narrow × control to the real leave-aware close.
 for(const button of $$('.top .win button[aria-label="关闭说明"]')){button.dataset.windowClose='true';button.title='关闭';button.setAttribute('aria-label','关闭');}
-const unmountWindowDrag=bridge.mountWindowDrag($('.top7')||$('.top'));
+// LJ-WINDOW-GRIP-20261102: reserve a visible drag target on every movable page header.
+const unmountWindowDrags=layout==='mobile'?[]:$$('.top7,.top').map(header=>{
+  const grip=document.createElement('span');grip.dataset.windowGrip='true';grip.title='按住此处拖动窗口';grip.setAttribute('aria-label',grip.title);
+  grip.innerHTML='<svg viewBox="0 0 12 20" aria-hidden="true"><circle cx="3" cy="4" r="1.5"/><circle cx="9" cy="4" r="1.5"/><circle cx="3" cy="10" r="1.5"/><circle cx="9" cy="10" r="1.5"/><circle cx="3" cy="16" r="1.5"/><circle cx="9" cy="16" r="1.5"/></svg>';
+  header.prepend(grip);return bridge.mountWindowDrag(header);
+});
 modules.region=mountBrowser(ui);modules.package=mountMaterials(ui);modules.settings=mountSettings(ui);modules.diagnostic=mountDiagnostics(ui);modules.map=mountMap(ui);
 ui.guide=mountGuide(ui,{settings:modules.settings});
 ui.updateIndicator=mountUpdateIndicator(ui);
@@ -83,5 +88,5 @@ document.addEventListener('click',async event=>{
 document.addEventListener('living-japan-settings-tab',event=>{ui.openSettings(event.detail?.tab||event.detail||'reading',event.detail?.channel).catch(error=>ui.notify(error.message,'error'));});
 const unsubscribe=bridge.subscribe(()=>{renderTools();if(['diagnostic','map'].includes(ui.state.page))modules[ui.state.page]?.render?.();});
 globalThis.LivingJapanView={ui,modules,async leave(){if(!(await ui.reader.close())||!(await ui.placeEditor.requestLeave()))return false;return modules.settings.requestLeave?modules.settings.requestLeave():true;},async prepareLayoutChange(){if(!(await ui.reader.close()))return false;if(modules.settings.requestLeave&&!(await modules.settings.requestLeave()))return false;ui.placeEditor.suspend();return true;}};
-window.addEventListener('unload',()=>{unsubscribe();unmountWindowDrag();ui.guide.destroy();ui.updateIndicator.destroy();modules.map?.destroy?.();},{once:true});
+window.addEventListener('unload',()=>{unsubscribe();unmountWindowDrags.forEach(unmount=>unmount());ui.guide.destroy();ui.updateIndicator.destroy();modules.map?.destroy?.();},{once:true});
 try{renderTools();await ui.showPage(ui.state.page||'map');$('#ljLoading').remove();ui.guide.offer().catch(error=>ui.notify(error.message,'error'));}catch(error){$('#ljLoading').textContent=`资料读取失败：${error.message}`;console.error(error);}

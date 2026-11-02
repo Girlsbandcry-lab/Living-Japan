@@ -1,7 +1,6 @@
 import { $, $$, esc, button } from './dom.js';
 import { createBrowseHistory } from '../src/browse-history.js';
 import { createPlaceSummary } from './place-summary.js';
-import { chooseRelatedIntroductions } from '../src/related-place-selection.js';
 import { navigationCoordinates } from '../src/living-area-map.js';
 import { favoritePlaceId, isFavoritePlace, normalizeFavoritePlaceIds } from '../src/place-favorites.js';
 import { isHiddenPlace } from '../src/place-hidden.js';
@@ -184,8 +183,7 @@ export function mountBrowser(ui) {
     const ticket=++relatedRequest,selection=selectedId;
     if(!e||e.browseOnly||e.type==='行政区')return;
     try{
-      const overture=(await catalog.loadIndex?.())?.runtimeSource?.kind==='overture'||Boolean(e.livingAreaRole);
-      const rows=await catalog.related(e,overture?{}:{limit:7}),peers=overture?rows:chooseRelatedIntroductions(rows);
+      const peers=await catalog.relatedDisplay(e);
       await ui.bridge.session.ensureSummaries?.([e,...peers]);
       if(ticket!==relatedRequest||selection!==selectedId)return;
       const host=$('[data-browse-related]',root);if(!host)return;

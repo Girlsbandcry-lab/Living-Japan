@@ -24,7 +24,9 @@ body[data-layout] :is(.set12-segment,.set12-tabs,.section-tabs,.record-switch){m
 body[data-layout] .set12-segment{height:var(--lj-tab-size)}
 body[data-layout] .set12-segment button{font-size:13px;line-height:1.35;padding:6px 10px}
 body[data-layout] :is(.density7,.level) button{box-sizing:border-box;min-height:var(--lj-tab-size);font-size:13px;line-height:1.35;padding:6px 0}
-body[data-layout] :is(.lj-full-back,.fullmap-return){box-sizing:border-box;min-height:var(--lj-tab-size);font-size:13px;line-height:1.35;display:inline-flex;align-items:center;justify-content:center;padding:6px 9px}
+/* LJ-FULLMAP-RETURN-20261102: preserve ordinary-map hiding and keep the desktop return label on one line. */
+body[data-layout] :is(.side-off .lj-full-back,.fullmap-return){box-sizing:border-box;min-height:var(--lj-tab-size);font-size:13px;line-height:1.35;display:inline-flex;align-items:center;justify-content:center;padding:6px 9px}
+body[data-layout="desktop"] .side-off .lj-full-back{width:auto;min-width:64px;white-space:nowrap}
 body[data-layout] .depart7{box-sizing:border-box;min-height:var(--lj-action-size);font-size:var(--lj-action-font);line-height:1.35;padding:6px 10px}
 body[data-layout] :is(.pkg-roots,.pkg10-roots) button{box-sizing:border-box;min-height:var(--lj-tab-size);font-size:13px;line-height:1.35}
 body[data-layout] .lj-material-paused{box-sizing:border-box;min-height:var(--lj-mini-size);padding:3px 6px;font-size:12px;line-height:1.35}
@@ -77,6 +79,9 @@ body[data-layout] .lj-detail-path .lj-detail-ancestor:focus-visible{outline:2px 
 .device{width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;margin:0!important;border:0!important;border-radius:0!important;box-shadow:none!important}
 body[data-layout="desktop"] .top7{overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}body[data-layout="desktop"] .top7 .tools7{flex:none}
 [data-window-drag]{cursor:grab;touch-action:none;user-select:none}[data-window-drag][data-window-dragging]{cursor:grabbing}
+[data-window-grip]{position:sticky;left:0;z-index:1;display:grid;place-items:center;flex:0 0 20px;align-self:center;height:30px;box-sizing:border-box;border:1px solid var(--line);border-radius:4px;background:var(--panel);color:var(--muted);cursor:inherit}
+[data-window-grip] svg{width:10px;height:18px;fill:currentColor;pointer-events:none}
+[data-window-grip]:hover,[data-window-dragging] [data-window-grip]{background:var(--soft);color:var(--accent)}
 body[data-layout="portrait"] [data-page-root="map"]{display:grid;grid-template-rows:minmax(0,min(319px,45%)) minmax(0,1fr) auto}
 body[data-layout="portrait"] #mapCanvas{height:auto;min-height:0}
 body[data-layout="portrait"] #mapFeed{position:relative;inset:auto;min-height:0;overflow:auto}

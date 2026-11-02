@@ -49,7 +49,7 @@ function fixture(layout = 'desktop') {
   const catalog = {
     navigationRoot: 'root', regions: () => [], get: id => entities.get(id), resolve: async id => entities.get(id),
     normalizeBrowseState: async saved => ({ ...saved, pathIds: saved.pathIds || [] }), browseNode: async id => entities.get(id),
-    related: entity => new Promise(resolve => pending.set(entity.id, resolve)), navigationPath: async id => id === 'root' ? [] : [pref, ward, entities.get(id)].filter((e, i, all) => e && all.findIndex(n => n?.id === e.id) === i),
+    relatedDisplay: entity => new Promise(resolve => pending.set(entity.id, resolve)), relatedDisplayRevision: () => 0, navigationPath: async id => id === 'root' ? [] : [pref, ward, entities.get(id)].filter((e, i, all) => e && all.findIndex(n => n?.id === e.id) === i),
     browsePage: async () => ({ items: [place, peer], total: 2, offset: 0, hasMore: false }),
     browseLocation: async entity => ({ status: 'found', parentId: 'root', offset: 0, pathIds: [], entryId: entity.id }), browseEntryId: entity => entity.id,
   };
