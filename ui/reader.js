@@ -54,6 +54,7 @@ export function createReader(ui) {
     active={entity,variants};bindVariant(filtered.find(v=>v.slotKey===view?.slotKey)||filtered[0]||variants[0]||null);mode=view?.mode||(editing&&active.variant?'edit':'read');compareReturn=view?.compareReturn||'read';mount();render();return true;
   }
   async function edit() {
+    if(ui.placeEditor&&!active.entity.materialFragmentId)return ui.placeEditor.open(active.entity,{tab:'text',bodyKey:active.variant?.slotKey});
     if(!active.variant){const entity=active.entity,id=await newSlot(entity);if(!id)return;active.variants=variantsFor(entity);bindVariant(active.variants.find(v=>v.packageId===id));}
     if(ui.state.page==='region'&&ui.locateMaterial){await ui.locateMaterial(active.entity,active.variant.packageId,true);return;}
     mode='edit';render();

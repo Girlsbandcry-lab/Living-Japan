@@ -165,12 +165,14 @@ export function createGeographicDirectory({ index, read, lookup = async () => nu
     filterCache = { key, revision, ids };
     return ids;
   }
-  async function page(parentId, { offset = 0, limit = 48, entityIds } = {}) {
+  async function page(parentId, { offset = 0, limit = 48, entityIds, favoriteIds = [] } = {}) {
     const parent = await ensure(parentId, undefined, true);
     const included = await allowed(entityIds);
     offset = Math.max(0, Math.floor(Number(offset) || 0));
     limit = Math.max(1, Math.floor(Number(limit) || 48));
-    const entries = parent ? [...(children.get(parent.id) || [])].map(id => nodes.get(id)).filter(row => row && (!included || included.has(row.id))).sort(compare) : [];
+    const favorites = new Set(favoriteIds.map(canonicalId));
+    const entries = parent ? [...(children.get(parent.id) || [])].map(id => nodes.get(id)).filter(row => row && (!included || included.has(row.id)))
+      .sort((a, b) => Number(favorites.has(b.id)) - Number(favorites.has(a.id)) || compare(a, b)) : [];
     return { items: entries.slice(offset, offset + limit).map(metadata), total: entries.length, offset, hasMore: offset + limit < entries.length };
   }
   async function path(id, { pathIds = [] } = {}) {
@@ -193,7 +195,7 @@ export function createGeographicDirectory({ index, read, lookup = async () => nu
     await init();
     return await walk(canonicalId(id), preferred, new Set()) || [];
   }
-  async function locate(id, { pageSize = 48, entityIds, pathIds } = {}) {
+  async function locate(id, { pageSize = 48, entityIds, pathIds, favoriteIds = [] } = {}) {
     const row = await ensure(id), unavailable = { status: 'unavailable', parentId: null, offset: 0, pathIds: [], entryId: row?.id || id };
     if (!row) return unavailable;
     const included = await allowed(entityIds);
@@ -201,7 +203,7 @@ export function createGeographicDirectory({ index, read, lookup = async () => nu
     const chain = await path(row.id, { pathIds });
     if (!chain.length) return unavailable;
     const container = chain.slice(0, -1), parentId = container.at(-1)?.id || rootId;
-    const siblings = await page(parentId, { entityIds, limit: Number.MAX_SAFE_INTEGER });
+    const siblings = await page(parentId, { entityIds, favoriteIds, limit: Number.MAX_SAFE_INTEGER });
     const position = siblings.items.findIndex(item => item.id === row.id);
     if (position < 0) return { ...unavailable, status: included ? 'filtered' : 'unavailable' };
     const size = Math.max(1, Math.floor(Number(pageSize) || 48));

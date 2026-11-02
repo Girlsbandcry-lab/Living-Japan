@@ -1,4 +1,5 @@
 import { normalizeMaterialLibrary } from './material-library.js';
+import { normalizePlaceEdits } from './place-edits.js';
 
 const PRODUCT_ID = 'living-japan';
 const BACKUP_FORMAT = 'living-japan-user-backup';
@@ -34,7 +35,7 @@ function customSlotMap(value) {
 }
 
 function checkedRecord(value, slotKey) {
-  if (!isObject(value) || typeof value.packageId !== 'string' || typeof value.body !== 'string' || !value.body.trim()) {
+  if (!isObject(value) || typeof value.packageId !== 'string' || typeof value.body !== 'string') {
     throw storageError('INVALID_BACKUP', `正文记录无效：${slotKey}`);
   }
   return { ...clone(value), slotKey, calendarSegmentId: value.calendarSegmentId || null };
@@ -75,6 +76,7 @@ export function createUserStore({ transport, initialData = {}, knownSlots = null
       livingJapanUIPreferences: isObject(source.livingJapanUIPreferences) ? source.livingJapanUIPreferences : {},
       customSlots: customSlotMap(source.customSlots),
       materialLibrary: normalizeMaterialLibrary(source.materialLibrary),
+      placeEdits: normalizePlaceEdits(source.placeEdits),
     };
     if (!Number.isSafeInteger(result.revision) || result.revision < 0) throw storageError('INVALID_DATA', '用户文件的保存版本无效');
     if (normalizer) result = normalizer(clone(result)) || result;
@@ -156,11 +158,16 @@ export function createUserStore({ transport, initialData = {}, knownSlots = null
       throw storageError('INVALID_BACKUP', '不是受支持的 Living Japan 用户备份');
     }
     const next = read();
-    const summary = { added: 0, overwritten: 0, unresolved: 0, baseChanged: 0, imported: 0, customSlotsAdded: 0, customSlotsOverwritten: 0, materialRecordsAdded: 0, materialRecordsOverwritten: 0, materialLibraryIncluded: false, settingsIncluded: false };
+    const summary = { added: 0, overwritten: 0, unresolved: 0, baseChanged: 0, imported: 0, customSlotsAdded: 0, customSlotsOverwritten: 0, materialRecordsAdded: 0, materialRecordsOverwritten: 0, placeEditsAdded: 0, placeEditsOverwritten: 0, placesCreatedAdded: 0, placesCreatedOverwritten: 0, materialLibraryIncluded: false, settingsIncluded: false };
     let records, orphans;
     if (parsed.format === BACKUP_FORMAT) {
       if (!isObject(parsed.data)) throw storageError('INVALID_BACKUP', '用户备份缺少内容');
       const incoming = normalizeContainer(parsed.data, { resolveTextSlots: false });
+      if (Object.hasOwn(parsed.data, 'placeEdits')) for (const key of ['overrides', 'created']) {
+        const added = key === 'created' ? 'placesCreatedAdded' : 'placeEditsAdded', overwritten = key === 'created' ? 'placesCreatedOverwritten' : 'placeEditsOverwritten';
+        for (const id of Object.keys(incoming.placeEdits[key])) summary[Object.hasOwn(next.placeEdits[key], id) ? overwritten : added] += 1;
+        next.placeEdits[key] = { ...next.placeEdits[key], ...incoming.placeEdits[key] };
+      }
       next.customSlots = { ...next.customSlots, ...incoming.customSlots };
       for (const id of Object.keys(incoming.customSlots)) {
         if (Object.hasOwn(confirmed.customSlots, id)) summary.customSlotsOverwritten += 1;
@@ -179,6 +186,9 @@ export function createUserStore({ transport, initialData = {}, knownSlots = null
         summary.materialLibraryIncluded = true;
       }
       next.livingJapanSettings = mergeObject(next.livingJapanSettings, incoming.livingJapanSettings);
+      if (isObject(parsed.data.livingJapanSettings) && Object.hasOwn(parsed.data.livingJapanSettings, 'peerPlaceQuotas')) {
+        next.livingJapanSettings.peerPlaceQuotas = clone(incoming.livingJapanSettings.peerPlaceQuotas);
+      }
       next.livingJapanUIPreferences = mergeObject(next.livingJapanUIPreferences, incoming.livingJapanUIPreferences);
       // LJ-BACKUP-UI-01: restore exported UI choices; older backups leave them untouched.
       if (isObject(parsed.data.extensionUi)) next.extensionUi = mergeObject(isObject(next.extensionUi) ? next.extensionUi : {}, parsed.data.extensionUi);

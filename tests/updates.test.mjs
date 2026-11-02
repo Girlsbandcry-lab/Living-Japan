@@ -10,8 +10,8 @@ test('extension check and update only call host extension endpoints, leaving use
     requests.push(url);
     assert.deepEqual(JSON.parse(options.body), { extensionName: 'Living-Japan', global: false });
     assert.equal(options.headers['X-CSRF-Token'], 'test-token');
-    if (url === '/api/extensions/version') return Response.json({ currentCommitHash: 'abc', currentBranchName: 'main', isUpToDate: false, remoteUrl: 'https://github.com/yyxz223-stack/Living-Japan' });
-    if (url === '/api/extensions/update') return Response.json({ shortCommitHash: 'def', isUpToDate: false, remoteUrl: 'https://github.com/yyxz223-stack/Living-Japan' });
+    if (url === '/api/extensions/version') return Response.json({ currentCommitHash: 'abc', currentBranchName: 'main', isUpToDate: false, remoteUrl: 'https://github.com/Girlsbandcry-lab/Living-Japan' });
+    if (url === '/api/extensions/update') return Response.json({ shortCommitHash: 'def', isUpToDate: false, remoteUrl: 'https://github.com/Girlsbandcry-lab/Living-Japan' });
     throw new Error(`unexpected endpoint ${url}`);
   };
   const manager = createUpdateManager({ context: { getRequestHeaders: () => ({ 'X-CSRF-Token': 'test-token' }) }, fetcher, global: false, version: 'v20261102' });

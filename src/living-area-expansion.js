@@ -1,8 +1,10 @@
 import { canonicalPlaceContext } from './place-identities.js';
 import { placeIntroduction } from './place-metadata.js';
+import { selectPeerPlaces } from './peer-place-selection.js';
+import { isHiddenPlace, normalizeHiddenPlaceIds } from './place-hidden.js';
 
 // LJ-LIVING-EXPANSION-20261101: explicit subjects and their living-area ancestors share one final text plan.
-export function createLivingAreaExpansion(data, directPlaceIds, settings) {
+export function createLivingAreaExpansion(data, directPlaceIds, settings, options = {}) {
   const contexts = data.canonicalPlaceContexts || {}, rows = contexts.rows || {};
   const resolve = id => canonicalPlaceContext(id, data) || rows[id];
   const unique = values => [...new Map(values.filter(Boolean).map(row => [row.id, row])).values()];
@@ -23,14 +25,24 @@ export function createLivingAreaExpansion(data, directPlaceIds, settings) {
     return !(data.controlGroups || []).some(group => group.kind === 'administrative' && group.layer === 'EX' && path.has(group.adminNodeId) && settings.groups[group.controlGroupId] === false);
   }) : [];
   const directIds = new Set(subjects.map(row => row.id)), materialContexts = new Map();
+  const peerPlans = new Map(), selectionCache = options.peerPlaceSelectionCache || {};
   const entries = subjects.map(entity => {
     const chain = ancestors(entity);
     const small = entity.livingAreaRole === 'small' ? entity : chain.find(row => row.livingAreaRole === 'small');
     const large = entity.livingAreaRole === 'large' ? entity : chain.find(row => row.livingAreaRole === 'large');
     const directParents = parents(entity);
-    const peers = entity.livingAreaRole === 'small' ? children(entity).filter(row => !row.livingAreaRole)
+    const peerCandidates = entity.livingAreaRole === 'small' ? children(entity).filter(row => !row.livingAreaRole)
       : entity.livingAreaRole === 'large' ? []
         : unique(directParents.flatMap(children)).filter(row => row.id !== entity.id && !row.livingAreaRole);
+    const parentId = entity.livingAreaRole === 'small' ? entity.id : directParents.map(row => row.id).sort().join('|') || entity.id;
+    if (entity.livingAreaRole !== 'large' && !peerPlans.has(parentId)) {
+      const selected = selectPeerPlaces(peerCandidates.filter(row => !directIds.has(row.id)), {
+        quotas: settings.peerPlaceQuotas, favoritePlaceIds: settings.favoritePlaceIds, hiddenPlaceIds: settings.hiddenPlaceIds, data,
+        cache: selectionCache, ...(typeof options.random === 'function' ? { random: options.random } : {}),
+      });
+      peerPlans.set(parentId, { parentId, ...selected });
+    }
+    const peers = peerPlans.get(parentId)?.rows || [];
     const smallAreas = large && entity.livingAreaRole !== 'small' ? children(large).filter(row => row.livingAreaRole === 'small') : [];
     const largeParents = parents(large);
     const peerAreas = large && settings.expandPeerLivingAreas
@@ -39,10 +51,13 @@ export function createLivingAreaExpansion(data, directPlaceIds, settings) {
     for (const row of [large, small, entity].filter(Boolean)) materialContexts.set(row.id, { entity: row, attachedOnly: !directIds.has(row.id) });
     return { entity, small, large, peers, smallAreas, peerAreas, parent: directParents[0] };
   });
-  return { entries, directIds, materialContexts: [...materialContexts.values()] };
+  return { entries, directIds, hiddenPlaceIds: normalizeHiddenPlaceIds(settings.hiddenPlaceIds), materialContexts: [...materialContexts.values()],
+    peerSelections: [...peerPlans.values()].map(({ parentId, groups }) => ({ parentId, groups })) };
 }
 
 export function renderLivingAreaExpansion(data, plan, packages, materialResult) {
+  const hidden = new Set(plan.hiddenPlaceIds || []);
+  const visible = row => row && !isHiddenPlace(row, hidden, data);
   const identity = id => canonicalPlaceContext(id, data)?.id || id;
   const packageMap = new Map(packages.map(item => [item.id, item]));
   const selections = materialResult.diagnostics.selected || [];
@@ -88,7 +103,7 @@ export function renderLivingAreaExpansion(data, plan, packages, materialResult) 
     const node = adminNodes[row.adminNodeId || row.adminPath?.at(-1)];
     if (!node) return '';
     const parent = adminNodes[node.parentId];
-    return (parent && /(?:city|municipality)/.test(parent.kind || '') ? parent.name || parent.label || '' : '') + (node.name || node.label || '');
+    return (parent && visible(parent) && /(?:city|municipality)/.test(parent.kind || '') ? parent.name || parent.label || '' : '') + (visible(node) ? node.name || node.label || '' : '');
   };
   const sections = [], displayedAdmins = new Set(), displayedLarge = new Set(), displayedNearby = new Set(), displayedPeers = new Set();
   for (const entry of plan.entries) {
@@ -98,10 +113,12 @@ export function renderLivingAreaExpansion(data, plan, packages, materialResult) 
     if (large && !displayedLarge.has(large.id)) {
       displayedLarge.add(large.id);
       const body = content.get(large.id) || (plan.directIds.has(large.id) && !effectiveIds.has(large.id) ? summary(large) : '');
-      sections.push('【' + large.name + '】' + (body ? '\n' + body : ''));
-      if (entry.smallAreas.length) sections.push(entry.smallAreas.map(line).join('\n'));
+      if (visible(large)) sections.push('【' + large.name + '】' + (body ? '\n' + body : ''));
+      else if (content.get(large.id)) sections.push(content.get(large.id));
+      const smallAreas = entry.smallAreas.filter(visible);
+      if (smallAreas.length) sections.push(smallAreas.map(line).join('\n'));
     }
-    const peerAreas = entry.peerAreas.filter(row => !displayedPeers.has(row.id));
+    const peerAreas = entry.peerAreas.filter(row => visible(row) && !displayedPeers.has(row.id));
     if (peerAreas.length) {
       peerAreas.forEach(row => displayedPeers.add(row.id));
       sections.push(peerAreas.map(line).join('\n'));
@@ -111,14 +128,17 @@ export function renderLivingAreaExpansion(data, plan, packages, materialResult) 
     if (!displayedNearby.has(nearbyKey)) {
       displayedNearby.add(nearbyKey);
       const body = small && !plan.directIds.has(small.id) ? content.get(small.id) : '';
-      const peers = entry.peers.filter(row => !plan.directIds.has(row.id));
+      const peers = entry.peers.filter(row => visible(row) && !plan.directIds.has(row.id));
       if (small || body || peers.length) {
-        sections.push('【' + (small?.name || entry.parent?.name || entity.name) + '附近地点】' +
+        const headingSource = small || entry.parent || entity;
+        const heading = visible(headingSource) ? headingSource.name : '';
+        sections.push('【' + heading + '附近地点】' +
           (body ? '\n' + body : '') + (peers.length ? '\n' + peers.map(line).join('\n') : ''));
       }
     }
     const own = content.get(entity.id) || (effectiveIds.has(entity.id) ? '' : summary(entity));
-    sections.push('【' + entity.name + '】' + (own ? '\n' + own : ''));
+    if (visible(entity)) sections.push('【' + entity.name + '】' + (own ? '\n' + own : ''));
+    else if (content.get(entity.id)) sections.push(content.get(entity.id));
   }
   return { text: sections.join('\n\n'), placedPackageIds: [...placedIds], duplicatePackageIds: [...duplicateIds], emittedPackageIds: [...emittedIds] };
 }

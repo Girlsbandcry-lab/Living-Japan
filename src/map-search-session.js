@@ -62,11 +62,11 @@ export function createMapSearchSession({ scan, formatItem = item => item, positi
     const job = current.get(scope);
     if (job && !job.complete && !job.controller.signal.aborted) { job.controller.abort(); counts.activeCancels++; }
   }
-  function start(query, { regionCode = 'metro', priorityBounds = null, requestScope = 'map-search', requestVersion = 0, pageSize = 40, supplemental = [], supplementalSignature = '', entityIds } = {}) {
+  function start(query, { regionCode = 'metro', priorityBounds = null, requestScope = 'map-search', requestVersion = 0, pageSize = 40, supplemental = [], supplementalSignature = '', entityIds, excludedIds = [] } = {}) {
     cancel(requestScope);
     const previous = current.get(requestScope); if (previous) jobs.delete(previous.queryId);
     const allowedIds = Array.isArray(entityIds) ? [...new Set(entityIds)].sort() : undefined;
-    const key = JSON.stringify([normalize(query), regionCode, supplementalSignature, allowedIds]), cached = completed.get(requestScope);
+    const key = JSON.stringify([normalize(query), regionCode, supplementalSignature, allowedIds, excludedIds]), cached = completed.get(requestScope);
     const job = { queryId: `map-search:${++sequence}`, requestScope, requestVersion, query: String(query).trim(), regionCode, entityIds: allowedIds, priorityBounds: priorityBounds ? [...priorityBounds] : null,
       pageSize, controller: new AbortController(), complete: false, phase: 'priority', items: [], positions: [], ids: new Map(), order: [], previewOrder: [], publishedPreviewCount: 0, lastPreviewAt: 0, sentFirst: false,
       near: 0, located: 0, unlocated: 0, boundaryCount: 0, displayAnchorCount: 0, regionCounts: {}, sourceCounts: {}, scanned: 0, scanMs: null, firstResultMs: null, priorityMs: null, started: performance.now() };
@@ -85,7 +85,7 @@ export function createMapSearchSession({ scan, formatItem = item => item, positi
       let lastScanned = 0;
       const recordScanned = scanned => { job.scanned = scanned; counts.rowsScanned += scanned - lastScanned; lastScanned = scanned; };
       try {
-        const result = await scan(job.query, { regionCode, entityIds: job.entityIds, priorityBounds: job.priorityBounds, signal: job.controller.signal,
+        const result = await scan(job.query, { regionCode, entityIds: job.entityIds, ...(excludedIds.length ? { excludedIds } : {}), priorityBounds: job.priorityBounds, signal: job.controller.signal,
           onBatch(batch, progress) {
             if (progress) recordScanned(progress.scanned);
             for (const item of batch) add(job, item);

@@ -209,7 +209,9 @@ export async function startLivingJapan({ baseUrl, context: suppliedContext, stor
     async refresh() { await session.refresh(); emit(); },
     async setLayout(value) {
       if (!['auto', 'desktop', 'portrait', 'mobile'].includes(value)) return false;
-      if (frame?.contentWindow?.LivingJapanView?.leave && !(await frame.contentWindow.LivingJapanView.leave())) return false;
+      const view = frame?.contentWindow?.LivingJapanView;
+      const prepareLayout = view?.prepareLayoutChange || view?.leave;
+      if (prepareLayout && !(await prepareLayout.call(view))) return false;
       await geometrySave;
       await store.update(data => { data.extensionUi = { ...data.extensionUi, layout: value }; return data; });
       requestedLayout = value; if (shell) renderFrame();

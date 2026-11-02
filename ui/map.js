@@ -162,9 +162,10 @@ export function mountMap(ui) {
     if (mounting) return mounting;
     mounting = (async () => {
       const savedView = state.mapView, savedMode = local.mode;
-      map = createNationalMap(surface, { catalog, onSelect: entity => { if (!suppressSelection) run(() => choose(entity, Boolean(local.query.trim()))); }, onAppend: entity => ui.append(entity), onError: error => ui.notify(error.message || String(error), 'error'), onViewChange: view => { state.mapView = view; local.regionCode = view.regionCode; local.mode = view.mode; } });
+      map = createNationalMap(surface, { catalog, onSelect: entity => { if (!suppressSelection&&!state.placeEditor?.picker) run(() => choose(entity, Boolean(local.query.trim()))); }, onAppend: entity => {if(!state.placeEditor?.picker)ui.append(entity);}, onPickPosition:position=>{if(state.placeEditor?.picker){state.placeEditor.picker.candidate=position;renderPicker();}}, onError: error => ui.notify(error.message || String(error), 'error'), onViewChange: view => { state.mapView = view; local.regionCode = view.regionCode; local.mode = view.mode; } });
       map.setTheme(document.body.dataset.theme);
       await map.setPointVisibility(bridge.store.read().extensionUi?.mapPointVisibility);
+      map.setHiddenPlaces(bridge.store.read().livingJapanSettings?.hiddenPlaceIds,ui.engine.data);
       await map.setRegion(savedView?.regionCode || local.regionCode);
       if (savedView) await map.setView(savedView);
       await map.setMode(savedView?.mode || savedMode); map.setRoute(state.routeOrigin, state.routeDestination);
@@ -425,9 +426,41 @@ export function mountMap(ui) {
     if (state.page !== 'map') { await ui.showPage('map'); if (state.page !== 'map') return; }
     local.full = Boolean(value); applyFullMap(); await ensureMap();
   }
+  async function beginPositionPick(position){
+    const draft=state.placeEditor;if(!draft)return;
+    await ensureMap();
+    draft.picker={view:map.getView(),full:local.full,returnPage:state.page,candidate:position?{...position}:null,original:position?{...position}:null};
+    if(!(await ui.showPage('map'))){delete draft.picker;ui.placeEditor.render();return;}
+    local.full=true;await map.setMode(local.mode==='schem'?'detail':local.mode);map.setPositionPick(true,draft.picker.candidate);applyFullMap();renderPicker();
+  }
+  async function finishPositionPick(confirm){
+    const draft=state.placeEditor,picker=draft?.picker;if(!picker)return;
+    if(confirm&&!picker.candidate)return;
+    if(confirm)draft.values.coordinates={...picker.candidate};
+    map.setPositionPick(false);delete draft.picker;surface.querySelector('[data-position-picker]')?.remove();
+    document.body.classList.remove('lj-position-picking');
+    local.full=picker.full;await map.setView(picker.view);state.mapView=map.getView();applyFullMap();await ui.showPage(picker.returnPage||'region');ui.placeEditor.render();
+  }
+  function renderPicker(){
+    surface.querySelector('[data-position-picker]')?.remove();const picker=state.placeEditor?.picker;if(!picker)return;
+    document.body.classList.add('lj-position-picking');
+    const toolbar=document.createElement('div');toolbar.className='lj-position-picker';toolbar.dataset.positionPicker='';
+    toolbar.innerHTML=`<span role="status">${picker.candidate?`临时位置 ${picker.candidate.longitude.toFixed(6)}，${picker.candidate.latitude.toFixed(6)}`:'点击地图选择位置，可拖动或缩放'}</span><button type="button" data-lj-map="pick-cancel">取消选点</button><button type="button" data-lj-map="pick-confirm" ${picker.candidate?'':'disabled'}>确认位置</button>`;surface.append(toolbar);
+  }
   function applyFullMap() {
     if (desktop) { $('#work7').classList.toggle('side-off', local.full); $('#ljFullMapPanels').hidden = !local.full; $('#mapFullSearch7').hidden = !local.full || !local.query; }
     else { $('[data-page-root="map"]').hidden = local.full; $('[data-page-root="fullmap"]').hidden = !local.full; (local.full ? hosts[1] : hosts[0]).prepend(surface); $('#device').classList.toggle('fullmap', local.full); }
+    renderBrandControl();
+  }
+  // LJ-MAP-BRAND-20261102: the narrow brand reflects the visible map state across page changes.
+  function renderBrandControl() {
+    if (desktop) return;
+    const full = state.page === 'map' && local.full, brand = $('#brandButton');
+    brand.innerHTML = full ? '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20C9 15 9 8 12 3c3 5 3 12 0 17Z"/><path d="M11 20C6 18 3 14 4 8c5 1 8 5 7 12Z"/><path d="M13 20c5-2 8-6 7-12-5 1-8 5-7 12Z"/><path d="M12 20v2"/></svg>' : '<span class="lj-map-expand" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5"/></svg><span>大</span></span>';
+    brand.dataset.icon = full ? 'lily' : 'expand';
+    brand.disabled = Boolean(full);
+    brand.title = full ? 'Living Japan · 全地图' : '进入无边全地图';
+    brand.setAttribute('aria-label', brand.title);
   }
   async function depart() {
     const mode = state.travelMode || 'public_transit', estimate = estimates[mode];
@@ -440,6 +473,8 @@ export function mountMap(ui) {
   async function click(event) {
     const node = event.target.closest('[data-lj-map]'); if (!node) return;
     const cmd = node.dataset.ljMap, entity = node.dataset.mapEntity ? local.history.find(item => item.id === node.dataset.mapEntity) || local.stash.find(item => item.id === node.dataset.mapEntity) || await resolve(node.dataset.mapEntity) : current();
+    if(cmd==='pick-confirm'||cmd==='pick-cancel'){await finishPositionPick(cmd==='pick-confirm');return;}
+    if(state.placeEditor?.picker){if(['read','append','origin','destination','depart','clear-route'].includes(cmd))return;if(['full','normal'].includes(cmd)){await finishPositionPick(false);return;}if(cmd==='mode'&&node.dataset.mapMode==='schem')return;if(['choose','history','search-choose'].includes(cmd)){await locate(entity);return;}}
     if (cmd === 'choose' || cmd === 'history' || cmd === 'search-choose') await choose(entity, cmd === 'search-choose');
     else if (cmd === 'locate') await locate(entity);
     else if (cmd === 'append') ui.append(entity);
@@ -449,7 +484,7 @@ export function mountMap(ui) {
     else if (cmd === 'mode') { const control = node.closest('[data-map-level-control]'); if (control?.dataset.expanded === 'false' && node.dataset.mapMode === local.mode) { control.dataset.expanded = 'true'; return; } local.mode = node.dataset.mapMode; await ensureMap(); await map.setMode(local.mode); if (control && !local.full) control.dataset.expanded = 'false'; renderControls(); state.mapView = map.getView(); }
     else if (cmd === 'travel') { state.travelMode = node.dataset.mapTravel; renderRoute(); }
     else if (cmd === 'depart') await depart();
-    else if (cmd === 'full' || cmd === 'normal') await setFullMap(cmd === 'full' ? !local.full : false);
+    else if (cmd === 'full' || cmd === 'normal') await setFullMap(cmd === 'full' ? !(local.full && (desktop || state.page === 'map')) : false);
     else if (cmd === 'details') { local.details = !local.details; renderSelection(); }
     else if (cmd === 'history-menu' || cmd === 'stash-menu') { const kind = cmd.split('-')[0], host = node.closest('.map').id; local.menu = local.menu === kind && local.menuHost === host ? '' : kind; local.menuHost = host; renderControls(); }
     else if (cmd === 'menu-close') { local.menu = ''; renderControls(); }
@@ -475,8 +510,11 @@ export function mountMap(ui) {
   document.addEventListener('change', pageChange); document.addEventListener('keydown', pageKeyDown);
   async function render() {
     renderControls(); renderSelection(); applyFullMap(); await ensureMap(); map.setTheme(document.body.dataset.theme); await map.setPointVisibility(bridge.store.read().extensionUi?.mapPointVisibility);
+    map.setHiddenPlaces(bridge.store.read().livingJapanSettings?.hiddenPlaceIds,ui.engine.data);
+    if(state.placeEditor?.picker){local.full=true;if(local.mode==='schem')await map.setMode('detail');map.setPositionPick(true,state.placeEditor.picker.candidate);applyFullMap();renderPicker();}
+    else{map.setPositionPick(false);surface.querySelector('[data-position-picker]')?.remove();document.body.classList.remove('lj-position-picking');}
     if (local.query.trim() && searchState.query !== local.query.trim() && timer === null && !composingInput) await search(); else renderSearch();
     await refreshRoute();
   }
-  return { render, select, locate, setRegion, setFullMap, destroy() { dead = true; invalidateSearch(); composingInput = null; splitter?.destroy(); relatedSelection.destroy(); ++routeEpoch; if (map) state.mapView = map.getView(); map?.destroy(); document.removeEventListener('click', handleClick); document.removeEventListener('dblclick', doubleClick); document.removeEventListener('change', pageChange); document.removeEventListener('keydown', pageKeyDown); } };
+  return { render, select, locate, setRegion, setFullMap, renderBrandControl, beginPositionPick, destroy() { dead = true; invalidateSearch(); composingInput = null; splitter?.destroy(); relatedSelection.destroy(); ++routeEpoch; if (map) state.mapView = map.getView(); map?.destroy(); document.removeEventListener('click', handleClick); document.removeEventListener('dblclick', doubleClick); document.removeEventListener('change', pageChange); document.removeEventListener('keydown', pageKeyDown); } };
 }

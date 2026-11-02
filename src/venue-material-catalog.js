@@ -1,7 +1,7 @@
 // Generated from the dispatched classification contract; rebuild with scripts/build-venue-material-catalog.mjs.
 export const VENUE_MATERIAL_SOURCE = {
   "path": "工程表/行政区重建/共用/classification-contract-index.json",
-  "sha256": "e693d8588ccfde853461b7eb526d2c2c5ebe85f3392d8a143300114d2ed84bc2",
+  "sha256": "6f3b86538a89358763ad8d4ec7f85700fdb761887e929cd138c45b8df7cdb0a3",
   "canonicalPurposeCount": 602,
   "materialTagCount": 28,
   "aliasCount": 114

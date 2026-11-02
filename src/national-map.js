@@ -6,6 +6,7 @@ import { mapPalette, schematicLineColor } from './map-palette.js';
 import { deduplicateMapPoints, sameMapPoint } from './map-point-dedup.js';
 import { mapLevelPolicy, mapPointRole, mapRolePriority } from './map-levels.js';
 import { isLivingArea, livingAreaMapVisible } from './living-area-map.js';
+import { isHiddenPlace } from './place-hidden.js';
 
 const categoryColors = Object.fromEntries([
   [['商', '超', '便', '书', '店', '服'], '#b46791'], [['食', '咖', '包', '酒'], '#b66b36'],
@@ -18,7 +19,7 @@ const nightIconColors = Object.fromEntries(Object.entries(categoryColors).map(([
   '#' + color.slice(1).match(/../g).map(channel => Math.round(parseInt(channel, 16) * 0.7 + 255 * 0.3).toString(16).padStart(2, '0')).join('')]));
 
 // LJ-NATIONAL-MAP-01: canvas viewport; selection and name append are separate actions.
-export function createNationalMap(container, { catalog, onSelect = () => {}, onAppend = () => {}, onError = () => {}, onViewChange = () => {} } = {}) {
+export function createNationalMap(container, { catalog, onSelect = () => {}, onAppend = () => {}, onError = () => {}, onViewChange = () => {}, onPickPosition = () => {} } = {}) {
   if (!container || !catalog) throw new Error('地图缺少容器或资料目录');
   const canvas = container.ownerDocument.createElement('canvas');
   canvas.setAttribute('aria-label', 'Living Japan 地图，可拖动、缩放和选择地点');
@@ -43,6 +44,9 @@ export function createNationalMap(container, { catalog, onSelect = () => {}, onA
   let pointVisibility = normalizeMapPointVisibility(), visibilityKey = JSON.stringify(pointVisibility);
   let hasSize = false, pendingFit = null, outline = null, locateEpoch = 0;
   let searchResults = [], searchHits = [], pendingSearchResults = null;
+  // LJ-PLACE-MAP-EDIT-20261102: hidden markers stay out of every point layer; picks remain draft-only.
+  let hiddenIds=[],hiddenData={},positionPicking=false,pickedPosition=null;
+  const hidden=entity=>isHiddenPlace(entity,hiddenIds,hiddenData)||isHiddenPlace(pairOf(entity)?.region,hiddenIds,hiddenData)||isHiddenPlace(pairOf(entity)?.anchor,hiddenIds,hiddenData);
   let paintedView = null, dragPreview = null, framePreview = false;
   const frameRequest = globalThis.requestAnimationFrame || (fn => setTimeout(fn, 16));
   const frameCancel = globalThis.cancelAnimationFrame || clearTimeout;
@@ -94,7 +98,7 @@ export function createNationalMap(container, { catalog, onSelect = () => {}, onA
     shownLabelKeys = next;
   }
   function displayPoints() {
-    const eligible = entity => entity && livingAreaMapVisible(entity, bounds()) && (roleOf(entity) === 'region' || isMapPointVisible(entity, pointVisibility)) && xy(entity);
+    const eligible = entity => entity && !hidden(entity) && livingAreaMapVisible(entity, bounds()) && (roleOf(entity) === 'region' || isMapPointVisible(entity, pointVisibility)) && xy(entity);
     const active = deduplicateMapPoints([selected, ...route].map(displayEntity).filter(eligible));
     const ordinary = deduplicateMapPoints([...active, ...visible.map(displayEntity).filter(eligible)]).slice(active.length);
     return [...ordinary.sort((a, b) => {
@@ -157,7 +161,7 @@ export function createNationalMap(container, { catalog, onSelect = () => {}, onA
   const geographicView = () => mode !== 'schem' || map?.schematic?.coordinateSystem === 'national-projection';
   const searchPoints = (rows = searchResults) => rows.map((entity, index) => ({ entity, number: index + 1,
     point: project(entity?.coordinates) || project(entity?.displayAnchorCoordinates) }))
-    .filter(row => row.point && !isLivingArea(row.entity) && isMapPointVisible(row.entity, pointVisibility));
+    .filter(row => row.point && !hidden(row.entity) && !isLivingArea(row.entity) && isMapPointVisible(row.entity, pointVisibility));
   function setSearchResults(rows = []) {
     const next = [...rows];
     if (touches.size && next.length) pendingSearchResults = next;
@@ -272,6 +276,7 @@ export function createNationalMap(container, { catalog, onSelect = () => {}, onA
     for (const { entity: e, text, isSelected } of activePoints) dot(e, true, true, isSelected ? null : palette.endpoint, text, isSelected);
     paintLabels();
     drawSearchResults();
+    if(positionPicking&&pickedPosition){const p=project(pickedPosition);if(p){const [x,y]=screen(p);ctx.beginPath();ctx.arc(x,y,10,0,Math.PI*2);ctx.fillStyle=palette.selected;ctx.fill();ctx.strokeStyle=palette.halo;ctx.lineWidth=3;ctx.stroke();ctx.beginPath();ctx.moveTo(x-17,y);ctx.lineTo(x+17,y);ctx.moveTo(x,y-17);ctx.lineTo(x,y+17);ctx.strokeStyle=palette.selected;ctx.lineWidth=2;ctx.stroke();}}
     paintedView = { center: [...center], scale };
     if (dragPreview) dragPreview.center = [...center];
   }
@@ -408,17 +413,18 @@ export function createNationalMap(container, { catalog, onSelect = () => {}, onA
     const was = drag; touches.delete(event.pointerId); canvas.releasePointerCapture?.(event.pointerId); if (touches.size < 2) pinch = null;
     const committed = !touches.size && endDragPreview(true);
     if (was?.id === event.pointerId && !was.moved && event.type !== 'pointercancel') {
-      const entity = hit(localPoint(event)); if (entity) {
+      if(positionPicking){const projection=catalog.projection(),[x,y]=world(localPoint(event));if(geographicView()&&projection?.xScale&&projection?.yScale){pickedPosition={longitude:(x-projection.xOffset)/projection.xScale,latitude:(y-projection.yOffset)/projection.yScale};schedule();onPickPosition({...pickedPosition});}}
+      else {const entity = hit(localPoint(event)); if (entity) {
         selectLocal(entity);
         if (event.pointerType === 'touch') { const now = Date.now(); if (lastTouch?.id === entity.id && now - lastTouch.time < 350) { onAppend(entity); suppressDoubleClickUntil = now + 500; lastTouch = null; } else lastTouch = { id: entity.id, time: now }; }
-      }
+      }}
     }
     drag = null; canvas.style.cursor = 'grab';
     if (!touches.size && (was?.moved || refreshDeferred || committed)) { refreshDeferred = false; changed(!committed); }
     if (!touches.size && pendingSearchResults !== null) { const rows = pendingSearchResults; pendingSearchResults = null; setSearchResults(rows); }
   };
   listen('pointerup', pointerEnd); listen('pointercancel', pointerEnd);
-  listen('dblclick', event => { event.preventDefault(); if (Date.now() < suppressDoubleClickUntil) return; const entity = hit(localPoint(event)); if (entity) { selectLocal(entity); onAppend(entity); } });
+  listen('dblclick', event => { event.preventDefault(); if (positionPicking||Date.now() < suppressDoubleClickUntil) return; const entity = hit(localPoint(event)); if (entity) { selectLocal(entity); onAppend(entity); } });
   const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(resize) : null; observer?.observe(container);
   resize();
   async function setRegion(nextCode) {
@@ -472,6 +478,8 @@ export function createNationalMap(container, { catalog, onSelect = () => {}, onA
     const p = xy(entity); if (p) { center = p; scale = Math.max(scale, mode === 'schem' ? 1 : 1.6); changed(); } await refresh();
   }
   return { setRegion,
+    setHiddenPlaces(ids,data={}){hiddenIds=ids||[];hiddenData=data;endDragPreview();schedule();},
+    setPositionPick(value,position=null){positionPicking=Boolean(value);pickedPosition=position;lastTouch=null;if(positionPicking&&!geographicView())setMode('detail');canvas.style.cursor=positionPicking?'crosshair':'grab';endDragPreview();schedule();},
     async select(entity, { locate: shouldLocate = true } = {}) {
       if (!entity) { selected = null; schedule(); return; }
       if (shouldLocate) await locate(entity); if (!dead) selectLocal(entity);
