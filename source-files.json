@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "candidate": "source-v20261102",
-  "publicationState": "published_current_version_places_collaboration_separated",
+  "publicationState": "release",
   "files": [
     {
       "path": ".agents/skills/living-japan-district-workflow/SKILL.md",
@@ -77,8 +77,8 @@
       "path": "README.md",
       "origin": "README.md; source-role guidance",
       "mode": "generated",
-      "bytes": 5276,
-      "sha256": "bc2c7f36b0fda6ebabd4303be48f82da9292b9443442eca0e41244056d3f4e60"
+      "bytes": 2643,
+      "sha256": "602ad18f7c4fe28166993cc0a807a41ea95c0ac0de44b1e168287b546eb36086"
     },
     {
       "path": "assets/map-icons/Apache-2.0.txt",
@@ -217,8 +217,8 @@
       "path": "docs/安装与恢复.md",
       "origin": "docs/安装与恢复.md",
       "mode": "copied",
-      "bytes": 4456,
-      "sha256": "e5b0924ecff9dca64330145edbe9d689e1111b00777966bf05ae6f6cea0b6c8d"
+      "bytes": 3106,
+      "sha256": "2cdc15fc8333d44f612e058412074fc5fc1a6afd1c957c2b7c7c5dc2e5c8356a"
     },
     {
       "path": "docs/来源与许可证.md",
@@ -301,8 +301,8 @@
       "path": "src/app.js",
       "origin": "src/app.js",
       "mode": "copied",
-      "bytes": 12802,
-      "sha256": "2c38548c45557787ec3a0d593b835cf9bd34120079dd25166e836431a29961f2"
+      "bytes": 16975,
+      "sha256": "e55a6108b9d19e61370b5a13d3665eeb7ac1af4629aea36d8da97db1d0ac556d"
     },
     {
       "path": "src/baseline.js",
@@ -357,8 +357,8 @@
       "path": "src/floating-entry.css",
       "origin": "src/floating-entry.css",
       "mode": "copied",
-      "bytes": 6049,
-      "sha256": "f15afb04074a9adffa12f7595564ff173a60c63c1747ef649d2f1eda1d751378"
+      "bytes": 5866,
+      "sha256": "09fbb179b831676b26c0fa62fa6ef3b4ed1212d5870dd0cb3ea37012268ad4bc"
     },
     {
       "path": "src/floating-entry.js",
@@ -378,8 +378,8 @@
       "path": "src/host-entries.js",
       "origin": "src/host-entries.js",
       "mode": "copied",
-      "bytes": 3407,
-      "sha256": "750f0faad01fb2a2d50622a0547a464ed1eec7571ea639ec0df7123be03f7011"
+      "bytes": 4012,
+      "sha256": "45998b501daafc3a282523b05856ca9c777d9a7a8c35eeaa6c15e2b9f3e10abd"
     },
     {
       "path": "src/injection-names.js",
@@ -798,8 +798,8 @@
       "path": "ui/controller.js",
       "origin": "ui/controller.js",
       "mode": "copied",
-      "bytes": 8799,
-      "sha256": "128d30739d84bf7a34f04873e40176bae3ed58325991ff1a038800b63906ddba"
+      "bytes": 8891,
+      "sha256": "04793fe05cfef159533e8a6667099b2dc987771c7cfa7b206784a6aff33b2f95"
     },
     {
       "path": "ui/desktop.html",
@@ -910,8 +910,8 @@
       "path": "ui/runtime.css",
       "origin": "ui/runtime.css",
       "mode": "copied",
-      "bytes": 23743,
-      "sha256": "268d938da5270039750dbe3efb6dd63f44e53a246556125b4671c131c88525a2"
+      "bytes": 23868,
+      "sha256": "1d474bae42d1d17caca9975d12c2d4a907e700a8ac8728ec07bd2db2221e9a1f"
     },
     {
       "path": "ui/settings.css",

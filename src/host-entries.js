@@ -12,9 +12,21 @@ export function registerHostEntries({ open, openPackages = open, document = glob
   const create = (tag, className, text) => { const node = document.createElement(tag); node.className = className; if (text) node.textContent = text; return node; };
   function entry(id, kind) {
     const root = create('div', `extension_container lj-host-entry lj-host-${kind}`); root.id = id;
-    if (kind === 'settings') root.append(create('strong', 'lj-host-heading', 'Living Japan'), create('div', 'lj-host-description', '写作资料与地区资料包'));
+    // LJ-HOST-DRAWER-20261102: the host owns the collapsed settings drawer; the wand keeps only the app opener.
+    let content = root;
+    const actions = [['open', '打开 Living Japan', 'fa-torii-gate', open]];
+    if (kind === 'settings') {
+      const drawer = create('div', 'inline-drawer');
+      const header = create('div', 'inline-drawer-toggle inline-drawer-header');
+      const icon = create('div', 'inline-drawer-icon fa-solid fa-circle-chevron-down down'); icon.setAttribute('aria-hidden', 'true');
+      header.append(create('strong', '', 'Living Japan'), icon);
+      content = create('div', 'inline-drawer-content');
+      content.append(create('div', 'lj-host-description', '写作资料与地区资料包'));
+      drawer.append(header, content); root.append(drawer);
+      actions.push(['packages', '地区资料包', 'fa-box-open', openPackages]);
+    }
     const error = create('div', 'lj-host-error'); error.hidden = true; error.setAttribute('role', 'alert');
-    for (const [action, text, icon, callback] of [['open', '打开 Living Japan', 'fa-torii-gate', open], ['packages', '地区资料包', 'fa-box-open', openPackages]]) {
+    for (const [action, text, icon, callback] of actions) {
       const button = create('button', kind === 'wand' ? 'list-group-item flex-container flexGap5 lj-host-button' : 'menu_button menu_button_icon lj-host-button');
       button.type = 'button'; button.setAttribute('data-lj-host-action', action);
       const glyph = create('i', `fa-solid ${icon}${kind === 'wand' ? ' extensionsMenuExtensionButton' : ''}`); glyph.setAttribute('aria-hidden', 'true');
@@ -24,9 +36,9 @@ export function registerHostEntries({ open, openPackages = open, document = glob
         const failed = reason => { error.textContent = String(reason?.message || reason); error.hidden = false; };
         try { Promise.resolve(callback?.()).catch(failed); } catch (reason) { failed(reason); }
       });
-      root.append(button);
+      content.append(button);
     }
-    root.append(error); return root;
+    content.append(error); return root;
   }
   function mount() {
     if (destroyed) return;
