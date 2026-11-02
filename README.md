@@ -1,5 +1,7 @@
 # Living Japan
 
+**地点资料协作：[Living-Japan-Places](https://github.com/yyxz223-stack/Living-Japan-Places)。地点正本仅在独立资料仓库维护；地点协作者不授予本体仓库写权限，资料更新发布前由所有者确认。**
+
 **[项目待办事项树](PROJECT_TODO.md)** · 当前：main 唯一默认安装入口已修正并通过真实酒馆验收。只填仓库地址、分支留空即可安装 v20261102 达摩新版。
 
 用于小说写作的 SillyTavern 扩展。本体版本为 **v20261102**，首都圈资料版本为 **SDQ20261102**。保留已确认的横版、竖版、手机布局，以及 `{{livingjapan}}` 宏。

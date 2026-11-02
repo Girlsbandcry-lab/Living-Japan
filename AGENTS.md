@@ -1,5 +1,7 @@
 # Living Japan｜共享工程规则
 
+**地点编辑入口已迁至 [https://github.com/yyxz223-stack/Living-Japan-Places](https://github.com/yyxz223-stack/Living-Japan-Places)。本仓库只由所有者维护本体代码，不向地点协作者授予写权限。随版行政区合同只作阅读参考，不在本仓库另建地点正本。**
+
 本文件只约束本仓库的行政区地点工程，不承接工作区其它正文项目。
 
 ## 入口与权威

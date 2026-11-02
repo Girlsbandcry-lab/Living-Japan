@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "candidate": "source-v20261102",
-  "publicationState": "published_current_only_default_install_verified",
+  "publicationState": "published_current_version_places_collaboration_separated",
   "files": [
     {
       "path": ".agents/skills/living-japan-district-workflow/SKILL.md",
@@ -56,29 +56,29 @@
       "path": "AGENTS.md",
       "origin": "AGENTS.md",
       "mode": "copied",
-      "bytes": 5677,
-      "sha256": "7e5e180f038e4be769589f11d312263872bd87de58de25741b2277b8e25ec6e3"
+      "bytes": 5986,
+      "sha256": "6e0a8c512f869d3c6b91e75a8b3bb38480f1368f1ef4602b337134580cb669a5"
     },
     {
       "path": "CONTRIBUTING.md",
       "origin": "github-kit/CONTRIBUTING.md; current scope",
       "mode": "generated",
-      "bytes": 4004,
-      "sha256": "c6ab01b2f64eb1ddf247328d8cbedfd8480b9a466db3c1fe0b666be235b2f04d"
+      "bytes": 1781,
+      "sha256": "ac24c46def36dbaf83840024893b2f6650aef4189537e9b826a99dbe79e23899"
     },
     {
       "path": "PROJECT_TODO.md",
       "origin": "PROJECT_TODO.md; public evidence links only",
       "mode": "generated",
-      "bytes": 3859,
-      "sha256": "712be1285596a0e8d2f4938463933268653faabc922c1ac68821c11ffba05002"
+      "bytes": 5901,
+      "sha256": "572e44316d7e0c2aed4b26b8a7d3aa83283ab17d40854fefe16da20e20c85c8e"
     },
     {
       "path": "README.md",
       "origin": "README.md; source-role guidance",
       "mode": "generated",
-      "bytes": 5034,
-      "sha256": "d0e69644faad421f75d2b252951654659c4113d55b3cf3badacdb16d5ff51a8c"
+      "bytes": 5276,
+      "sha256": "bc2c7f36b0fda6ebabd4303be48f82da9292b9443442eca0e41244056d3f4e60"
     },
     {
       "path": "assets/map-icons/Apache-2.0.txt",
@@ -231,8 +231,8 @@
       "path": "docs/源码协作与构建.md",
       "origin": "generated scope; dependency boundaries",
       "mode": "generated",
-      "bytes": 3941,
-      "sha256": "6fc12eca26b9900b9adc9dd79376671bfe9992caaec3b5ce87c265ec93e4c9e4"
+      "bytes": 4250,
+      "sha256": "de8dbffe3ffe272ebba1ce04d14066aa20771fb2e42b87103950dc195e5db620"
     },
     {
       "path": "docs/验证说明.md",
@@ -938,8 +938,8 @@
       "path": "发布文件清单.md",
       "origin": "generated",
       "mode": "generated",
-      "bytes": 1823,
-      "sha256": "d0cf3ae05063b83d3c02d79334d09777217efe38fd383aeb3da82978b9b5a619"
+      "bytes": 2132,
+      "sha256": "249ddd891472d4ad5aaaecc1d51a6449a9e39b87ae7cdafce3c71215eab6d933"
     },
     {
       "path": "工程表/行政区重建/共用/classification-contract-index.json",
