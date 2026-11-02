@@ -9,6 +9,7 @@ button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}
 .work7{width:100%!important;height:100%!important;aspect-ratio:auto!important;min-width:0!important;border:0!important;border-radius:0!important;box-shadow:none!important}
 .device{width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;margin:0!important;border:0!important;border-radius:0!important;box-shadow:none!important}
 body[data-layout="desktop"] .top7{overflow-x:auto;overflow-y:hidden;scrollbar-width:thin}body[data-layout="desktop"] .top7 .tools7{flex:none}
+[data-window-drag]{cursor:grab;touch-action:none;user-select:none}[data-window-drag][data-window-dragging]{cursor:grabbing}
 body[data-layout="portrait"] [data-page-root="map"]{display:grid;grid-template-rows:minmax(0,min(319px,45%)) minmax(0,1fr) auto}
 body[data-layout="portrait"] #mapCanvas{height:auto;min-height:0}
 body[data-layout="portrait"] #mapFeed{position:relative;inset:auto;min-height:0;overflow:auto}

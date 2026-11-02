@@ -33,8 +33,6 @@
 #living-japan-floating-menu .lj-entry-error{color:#ba3b31;font-size:12px;padding:8px 4px 0;overflow-wrap:anywhere}
 .lj-host-entry .lj-host-button{font:inherit;color:inherit;cursor:pointer}
 .lj-host-wand .lj-host-button{width:100%;border:0;background:transparent;text-align:left}
-.lj-host-settings{padding:10px;margin:8px 0;border:1px solid var(--SmartThemeBorderColor,#7775);border-radius:10px}
-.lj-host-settings .lj-host-heading{display:block;font-size:1.05em}
 .lj-host-settings .lj-host-description{font-size:.85em;opacity:.75;margin:3px 0 9px}
 .lj-host-settings .lj-host-button{display:inline-flex;align-items:center;gap:7px;margin:2px 6px 2px 0}
 .lj-host-entry .lj-host-error{font-size:.85em;color:#d76f60;white-space:normal}

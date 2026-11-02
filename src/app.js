@@ -36,7 +36,37 @@ export async function startLivingJapan({ baseUrl, context: suppliedContext, stor
   if (!suppliedUpdates) void updates.check().catch(()=>{});
   let shell = null, shellViewport = null, shellScroll = null, frame = null, activeLayout = null, resizeHandle = null, sizeDrag = null;
   let inputObserver = null;
-  const manualHeights = {};
+  // LJ-WINDOW-GEOMETRY-20261102: each layout restores one saved geometry inside the visible outer-frame bounds.
+  const geometryKey = mode => mode === 'desktop' ? 'horizontal' : mode === 'portrait' ? 'vertical' : null;
+  function geometrySlots(preferences = {}) {
+    const saved = preferences.panelGeometry;
+    if (saved && ('horizontal' in saved || 'vertical' in saved)) return { horizontal: saved.horizontal || null, vertical: saved.vertical || null };
+    return { horizontal: null, vertical: null, ...(saved ? { [preferences.panelLayoutMode === 'vertical' ? 'vertical' : 'horizontal']: saved } : {}) };
+  }
+  const geometries = geometrySlots(store.read().livingJapanUIPreferences);
+  let geometrySave = Promise.resolve();
+  function currentGeometry() {
+    return { x: parseFloat(shellViewport.style.left), y: parseFloat(shellViewport.style.top), width: parseFloat(shell.style.width), height: parseFloat(shell.style.height) };
+  }
+  function persistGeometry(value = currentGeometry()) {
+    const key = geometryKey(shell.dataset.layout);
+    if (!key) return geometrySave;
+    const geometry = value && { ...value };
+    geometries[key] = geometry;
+    geometrySave = store.update(data => {
+      const preferences = data.livingJapanUIPreferences || {};
+      data.livingJapanUIPreferences = { ...preferences, panelGeometry: { ...geometrySlots(preferences), [key]: geometry } };
+      return data;
+    }).catch(error => { frame?.contentWindow?.LivingJapanView?.ui?.notify(error.message, 'error'); });
+    return geometrySave;
+  }
+  function changeGeometry(value) {
+    const key = geometryKey(shell.dataset.layout);
+    if (!key) return;
+    geometries[key] = value;
+    sizeFrame();
+    geometries[key] = currentGeometry();
+  }
   let requestedLayout = store.read().extensionUi?.layout || 'auto';
   const isPinned=data=>(data.extensionUi?.pinned??data.livingJapanUIPreferences?.panelPinned)!==false;
   let pinned=isPinned(store.read());
@@ -53,19 +83,20 @@ export async function startLivingJapan({ baseUrl, context: suppliedContext, stor
     const inputArea = document.getElementById('preview-input') || document.getElementById('send_textarea');
     const inputBox = inputArea?.getBoundingClientRect();
     if (inputBox?.width > 0 && inputBox.height > 0 && inputBox.bottom > top) bottom = Math.min(bottom, Math.max(top, inputBox.top));
-    const availableHeight = Math.max(1, bottom - top), mode = shell.dataset.layout;
+    const availableHeight = Math.max(1, bottom - top), mode = shell.dataset.layout, geometry = geometries[geometryKey(mode)];
     let width, height, viewportWidth, viewportHeight;
     if (mode === 'mobile') {
       width = viewportWidth = availableWidth; height = viewportHeight = availableHeight;
     } else {
       const ratio = mode === 'portrait' ? 0.5 : 8 / 5, minimum = mode === 'portrait' ? 640 : 600;
       const fitted = Math.max(minimum, Math.min(availableHeight - 8, (availableWidth - 32) / ratio));
-      height = Math.max(minimum, Math.min(manualHeights[mode] ?? fitted, fitted)); width = height * ratio;
+      const savedHeight = Number(geometry?.height);
+      height = Math.max(minimum, Math.min(geometry && Number.isFinite(savedHeight) ? savedHeight : fitted, fitted)); width = height * ratio;
       viewportWidth = Math.min(availableWidth, width + 32 + (height > availableHeight - 8 ? 16 : 0));
       viewportHeight = Math.min(availableHeight, height + 8 + (width > availableWidth - 32 ? 16 : 0));
     }
-    const x = sizeDrag ? Math.min(sizeDrag.left, left + availableWidth - viewportWidth) : left + (availableWidth - viewportWidth) / 2;
-    const y = sizeDrag ? Math.min(sizeDrag.top, top + availableHeight - viewportHeight) : top + (availableHeight - viewportHeight) / 2;
+    const x = Math.min(left + availableWidth - viewportWidth, Number.isFinite(geometry?.x) ? geometry.x : left + (availableWidth - viewportWidth) / 2);
+    const y = Math.min(top + availableHeight - viewportHeight, Number.isFinite(geometry?.y) ? geometry.y : top + (availableHeight - viewportHeight) / 2);
     Object.assign(shell.style, { width: `${width}px`, height: `${height}px` });
     Object.assign(shellViewport.style, { left: `${Math.max(left, x)}px`, top: `${Math.max(top, y)}px`, width: `${viewportWidth}px`, height: `${viewportHeight}px` });
     Object.assign(shellScroll.style, { width: `${Math.max(1, viewportWidth - (mode === 'mobile' ? 0 : 32))}px`, height: `${Math.max(1, viewportHeight - (mode === 'mobile' ? 0 : 8))}px` });
@@ -78,11 +109,42 @@ export async function startLivingJapan({ baseUrl, context: suppliedContext, stor
     } else Object.assign(frame.style, { position: '', width: '', height: '', transformOrigin: '', transform: '', left: '', top: '' });
     resizeHandle.hidden = mode === 'mobile';
   }
+  function mountWindowDrag(handle) {
+    if (!handle || !geometryKey(shell?.dataset.layout)) return () => {};
+    let drag = null;
+    handle.dataset.windowDrag = 'true';
+    const hostPoint = event => {
+      const rect = frame.getBoundingClientRect();
+      return { x: rect.left + event.clientX * rect.width / frame.clientWidth, y: rect.top + event.clientY * rect.height / frame.clientHeight };
+    };
+    const down = event => {
+      if ((event.button != null && event.button !== 0) || !geometryKey(shell.dataset.layout)
+        || event.target.closest?.('button,input,select,textarea,a,[role="button"],[contenteditable],.brand7,.lily')) return;
+      event.preventDefault(); event.stopPropagation();
+      drag = { id: event.pointerId, point: hostPoint(event), geometry: currentGeometry() };
+      handle.dataset.windowDragging = 'true'; handle.setPointerCapture(event.pointerId);
+    };
+    const move = event => {
+      if (!drag || drag.id !== event.pointerId) return;
+      const point = hostPoint(event);
+      changeGeometry({ ...drag.geometry, x: drag.geometry.x + point.x - drag.point.x, y: drag.geometry.y + point.y - drag.point.y });
+    };
+    const end = event => {
+      if (!drag || drag.id !== event.pointerId) return;
+      drag = null; delete handle.dataset.windowDragging;
+      if (handle.hasPointerCapture?.(event.pointerId)) handle.releasePointerCapture(event.pointerId);
+      void persistGeometry();
+    };
+    const events = { pointerdown: down, pointermove: move, pointerup: end, pointercancel: end, lostpointercapture: end };
+    for (const [name, listener] of Object.entries(events)) handle.addEventListener(name, listener);
+    return () => { for (const [name, listener] of Object.entries(events)) handle.removeEventListener(name, listener); delete handle.dataset.windowDrag; delete handle.dataset.windowDragging; };
+  }
   function mountSizeControl() {
     resizeHandle = document.createElement('button'); resizeHandle.id = 'living-japan-resize'; resizeHandle.type = 'button'; resizeHandle.textContent = '↘';
     resizeHandle.title = '拖动调整大小；双击恢复适配'; resizeHandle.setAttribute('aria-label', '调整界面大小；方向键调整，回车恢复适配');
     shellViewport.append(resizeHandle);
     resizeHandle.addEventListener('pointerdown', event => {
+      if ((event.button != null && event.button !== 0) || !geometryKey(shell.dataset.layout)) return;
       event.preventDefault(); event.stopPropagation();
       const box = shellViewport.getBoundingClientRect();
       sizeDrag = { id: event.pointerId, x: event.clientX, y: event.clientY, height: parseFloat(shell.style.height), left: box.left, top: box.top };
@@ -92,16 +154,16 @@ export async function startLivingJapan({ baseUrl, context: suppliedContext, stor
       if (!sizeDrag || sizeDrag.id !== event.pointerId) return;
       const ratio = shell.dataset.layout === 'portrait' ? 0.5 : 8 / 5;
       const delta = ((event.clientX - sizeDrag.x) * ratio + event.clientY - sizeDrag.y) / (ratio * ratio + 1);
-      manualHeights[shell.dataset.layout] = sizeDrag.height + delta; sizeFrame();
+      changeGeometry({ x: sizeDrag.left, y: sizeDrag.top, height: sizeDrag.height + delta });
     });
-    const endSize = event => { if (sizeDrag?.id !== event.pointerId) return; sizeDrag = null; resizeHandle.releasePointerCapture(event.pointerId); };
-    resizeHandle.addEventListener('pointerup', endSize); resizeHandle.addEventListener('pointercancel', endSize);
-    const fitSize = () => { delete manualHeights[shell.dataset.layout]; sizeFrame(); };
+    const endSize = event => { if (sizeDrag?.id !== event.pointerId) return; sizeDrag = null; if (resizeHandle.hasPointerCapture?.(event.pointerId)) resizeHandle.releasePointerCapture(event.pointerId); void persistGeometry(); };
+    resizeHandle.addEventListener('pointerup', endSize); resizeHandle.addEventListener('pointercancel', endSize); resizeHandle.addEventListener('lostpointercapture', endSize);
+    const fitSize = () => { geometries[geometryKey(shell.dataset.layout)] = null; sizeFrame(); void persistGeometry(null); };
     resizeHandle.addEventListener('dblclick', fitSize);
     resizeHandle.addEventListener('keydown', event => {
       if (event.key === 'Enter' || event.key === 'Home') { event.preventDefault(); fitSize(); }
       if (['ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown'].includes(event.key)) {
-        event.preventDefault(); manualHeights[shell.dataset.layout] = parseFloat(shell.style.height) + (['ArrowLeft', 'ArrowUp'].includes(event.key) ? -20 : 20); sizeFrame();
+        event.preventDefault(); changeGeometry({ ...currentGeometry(), height: parseFloat(shell.style.height) + (['ArrowLeft', 'ArrowUp'].includes(event.key) ? -20 : 20) }); void persistGeometry();
       }
     });
     window.addEventListener('resize', sizeFrame);
@@ -123,6 +185,7 @@ export async function startLivingJapan({ baseUrl, context: suppliedContext, stor
   async function close() {
     const view = frame?.contentWindow?.LivingJapanView;
     if (view?.leave && !(await view.leave())) return;
+    await geometrySave;
     if (shell) shell.hidden = shellViewport.hidden = true;
     entry.setOpen?.(false);
   }
@@ -147,13 +210,14 @@ export async function startLivingJapan({ baseUrl, context: suppliedContext, stor
     async setLayout(value) {
       if (!['auto', 'desktop', 'portrait', 'mobile'].includes(value)) return false;
       if (frame?.contentWindow?.LivingJapanView?.leave && !(await frame.contentWindow.LivingJapanView.leave())) return false;
+      await geometrySave;
       await store.update(data => { data.extensionUi = { ...data.extensionUi, layout: value }; return data; });
       requestedLayout = value; if (shell) renderFrame();
       return true;
     },
     append(name) { return session.engine.appendPlaceNameToChatInput(document, session.engine.outputTextForScript(name,session.engine.normalizeSettings(store.read().livingJapanSettings))); },
     appendTraffic(text) { return session.engine.appendTrafficToChatInput(document, session.engine.outputTextForScript(text,session.engine.normalizeSettings(store.read().livingJapanSettings))); },
-    open, close,
+    open, close, mountWindowDrag,
     metrics: { startupMs: Math.round(performance.now() - started), baselineRelease: baseline.data.releaseId },
     destroy() { session.stop(); catalog.destroy?.(); document.removeEventListener('click',outsideClick); unsubscribeStore(); inputObserver?.disconnect(); window.removeEventListener('resize',sizeFrame); window.visualViewport?.removeEventListener('resize',sizeFrame); window.visualViewport?.removeEventListener('scroll',sizeFrame); shellViewport?.remove(); if(!suppliedEntry)entry.destroy(); listeners.clear(); },
   };

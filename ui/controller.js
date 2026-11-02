@@ -46,6 +46,7 @@ ui.reader=createReader(ui);
 ui.materialEditor=createMaterialEditor(ui);
 // LJ-APPROVED-WINDOW-CLOSE-20261030: connect the confirmed narrow × control to the real leave-aware close.
 for(const button of $$('.top .win button[aria-label="关闭说明"]')){button.dataset.windowClose='true';button.title='关闭';button.setAttribute('aria-label','关闭');}
+const unmountWindowDrag=bridge.mountWindowDrag($('.top7')||$('.top'));
 modules.region=mountBrowser(ui);modules.package=mountMaterials(ui);modules.settings=mountSettings(ui);modules.diagnostic=mountDiagnostics(ui);modules.map=mountMap(ui);
 ui.guide=mountGuide(ui,{settings:modules.settings});
 ui.updateIndicator=mountUpdateIndicator(ui);
@@ -76,5 +77,5 @@ document.addEventListener('click',async event=>{
 document.addEventListener('living-japan-settings-tab',event=>{ui.openSettings(event.detail?.tab||event.detail||'reading',event.detail?.channel).catch(error=>ui.notify(error.message,'error'));});
 const unsubscribe=bridge.subscribe(()=>{renderTools();if(['diagnostic','map'].includes(ui.state.page))modules[ui.state.page]?.render?.();});
 globalThis.LivingJapanView={ui,modules,async leave(){if(!(await ui.reader.close()))return false;return modules.settings.requestLeave?modules.settings.requestLeave():true;}};
-window.addEventListener('unload',()=>{unsubscribe();ui.guide.destroy();ui.updateIndicator.destroy();modules.map?.destroy?.();},{once:true});
+window.addEventListener('unload',()=>{unsubscribe();unmountWindowDrag();ui.guide.destroy();ui.updateIndicator.destroy();modules.map?.destroy?.();},{once:true});
 try{renderTools();await ui.showPage(ui.state.page||'map');$('#ljLoading').remove();ui.guide.offer().catch(error=>ui.notify(error.message,'error'));}catch(error){$('#ljLoading').textContent=`资料读取失败：${error.message}`;console.error(error);}
