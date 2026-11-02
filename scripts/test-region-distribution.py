@@ -14,6 +14,14 @@ spec.loader.exec_module(builder)
 
 
 class DistributionContracts(unittest.TestCase):
+    def test_national_paths_keep_logical_names_when_directory_resolves_through_junction(self):
+        external_target = builder.ROOT.parent / 'physical-data-store' / 'canonical' / 'rows.json.gz'
+        with patch.object(Path, 'resolve', return_value=external_target):
+            self.assertEqual(builder.national_path('canonical/rows.json.gz'), 'data/national/canonical/rows.json.gz')
+            self.assertEqual(builder.national_path('../runtime/runtime.json'), 'data/runtime/runtime.json')
+            with self.assertRaises(ValueError):
+                builder.national_path('../../../outside.json')
+
     def test_resource_add_edit_remove_preserves_unrelated_download_blocks(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

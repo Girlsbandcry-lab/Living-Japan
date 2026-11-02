@@ -12,6 +12,7 @@ import datetime
 import gzip
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import shutil
@@ -187,7 +188,8 @@ class Resources:
 
 
 def national_path(path):
-    return (ROOT / "data/national" / path).resolve().relative_to(ROOT).as_posix()
+    # LJ-LOGICAL-PACK-PATH-20261102: package names stay logical even when data directories are junctions.
+    return Path(os.path.normpath(ROOT / "data/national" / path)).relative_to(ROOT).as_posix()
 
 
 def build_resources(source, runtime, packages, owners, runtime_root=None):

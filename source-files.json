@@ -225,7 +225,7 @@
       "origin": "generated; scoped verification",
       "mode": "generated",
       "bytes": 1644,
-      "sha256": "f8910d31685e71f0a5c0611e0534232e175131a2908d812db284dc9ec169109c"
+      "sha256": "3ca9b6c3d00371d1a963b1d9f7e6d3415ce4a481819f0a139bdf7d0eddb5de81"
     },
     {
       "path": "index.js",
@@ -266,8 +266,8 @@
       "path": "scripts/build-region-distribution.py",
       "origin": "scripts/build-region-distribution.py",
       "mode": "copied",
-      "bytes": 31259,
-      "sha256": "16a1edb0d04e5e85db08684ac48935da6399a95042c3f3371f15bbac41af8201"
+      "bytes": 31387,
+      "sha256": "0dc9d39f42a2a4f6633d8653e9f0eecdabdb601e1e00554ef71b169511216624"
     },
     {
       "path": "scripts/package-preview.html",
@@ -294,8 +294,8 @@
       "path": "scripts/test-region-distribution.py",
       "origin": "scripts/test-region-distribution.py",
       "mode": "copied",
-      "bytes": 20646,
-      "sha256": "b61ad0f647239d64a252dc45cc2c90195ddc410242435948d191b449ce99d49a"
+      "bytes": 21254,
+      "sha256": "b9323d4a2be7cbecb0f09850e42610e0a0190ff289057a00ef8fc493776d2d6a"
     },
     {
       "path": "src/app.js",
