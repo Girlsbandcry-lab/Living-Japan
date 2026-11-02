@@ -1,6 +1,6 @@
 # Living Japan｜地区资料
 
-当前本体 **v20261102.2**，首都圈 **SDQ20261102.1**。在[Living Japan](https://github.com/Girlsbandcry-lab/Living-Japan)内下载和更新，无需手动解压。
+当前本体 **v20261102.3**，首都圈 **SDQ20261102.1**。在[Living Japan](https://github.com/Girlsbandcry-lab/Living-Japan)内下载和更新，无需手动解压。
 
 32个已接收来源行政区：61,151个有效源地点＋1,424个结构对象，共62,575对象。地点涉及62个行政范围，其中部分仅为跨区采用点；不代表62区完成。待判、排除及后续在建区不启用。
 
