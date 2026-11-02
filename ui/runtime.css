@@ -1,6 +1,6 @@
 /* LJ-EXT-APPROVED-LAYOUT: fit the approved workspaces to the extension viewport. */
 html,body{margin:0!important;padding:0!important;width:100%;height:100%;overflow:hidden;background:var(--paper,#f2f8f7)}
-body{--paper:#f2f8f7;--panel:#fff;--ink:#172d3a;--muted:#3f5b66;--accent:#0068c9;--accent-dark:#0068c9;--sea:var(--accent);--line:#bdcfd4;--control-line:#6f8f99;--control:var(--control-line);--soft:#ddf1f4;--hover:#edf6f7;--on-accent:#fff;--warn:#9b5700;--warn-soft:#fff0cd;--warnsoft:var(--warn-soft);--ok:#00755f;--origin:#b84535;--copper:#c34a09;--glass:rgba(255,255,255,.94);--switch-off:#e1e9ea;--switch-knob:#647983;--surface-alt:#f5faf9;--editor-bg:#fff;color-scheme:light;font-family:Inter,"Noto Sans CJK SC","Microsoft YaHei UI","PingFang SC",sans-serif;color:var(--ink)}
+body{--paper:#f2f8f7;--panel:#fff;--ink:#172d3a;--muted:#3f5b66;--accent:#0068c9;--accent-dark:#0068c9;--sea:var(--accent);--line:#bdcfd4;--control-line:#6f8f99;--control:var(--control-line);--soft:#ddf1f4;--hover:#edf6f7;--on-accent:#fff;--warn:#9b5700;--warn-soft:#fff0cd;--warnsoft:var(--warn-soft);--ok:#00755f;--origin:#b84535;--copper:#c34a09;--glass:rgba(255,255,255,.90);--switch-off:#e1e9ea;--switch-knob:#647983;--surface-alt:#f5faf9;--editor-bg:#fff;color-scheme:light;font-family:Inter,"Noto Sans CJK SC","Microsoft YaHei UI","PingFang SC",sans-serif;color:var(--ink)}
 button,input,select,textarea{font:inherit;color:inherit}button{cursor:pointer}
 .top .lily .lj-map-expand{display:inline-grid;place-items:center;width:24px;height:24px;font-size:14px;font-weight:700;line-height:1}
 .top .lily .lj-map-expand>svg,.top .lily .lj-map-expand>span{grid-area:1/1}
@@ -24,9 +24,11 @@ body[data-layout] :is(.set12-segment,.set12-tabs,.section-tabs,.record-switch){m
 body[data-layout] .set12-segment{height:var(--lj-tab-size)}
 body[data-layout] .set12-segment button{font-size:13px;line-height:1.35;padding:6px 10px}
 body[data-layout] :is(.density7,.level) button{box-sizing:border-box;min-height:var(--lj-tab-size);font-size:13px;line-height:1.35;padding:6px 0}
-/* LJ-FULLMAP-RETURN-20261102: preserve ordinary-map hiding and keep the desktop return label on one line. */
-body[data-layout] :is(.side-off .lj-full-back,.fullmap-return){box-sizing:border-box;min-height:var(--lj-tab-size);font-size:13px;line-height:1.35;display:inline-flex;align-items:center;justify-content:center;padding:6px 9px}
-body[data-layout="desktop"] .side-off .lj-full-back{width:auto;min-width:64px;white-space:nowrap}
+/* LJ-MAP-EDGE-CONTROLS-20261102: real vertical labels share a translucent edge treatment without moving their existing anchors. */
+body[data-layout] :is(.side-off .lj-full-back,.fullmap-return){box-sizing:border-box;width:32px;min-height:96px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;padding:9px 3px;border:1px solid var(--control-line)!important;border-left:0!important;background:var(--glass);color:var(--accent);font-size:13px;line-height:1}
+body[data-layout] :is(.lj-full-back,.fullmap-return)>span{font-size:19px;line-height:1}
+body[data-layout] :is(.lj-full-back,.fullmap-return)>b{writing-mode:vertical-rl;text-orientation:upright;letter-spacing:3px;font-size:13px;line-height:1}
+body[data-layout] :is(.nav7,.top .nav) button[aria-current="page"]{background:var(--soft);color:var(--accent);font-weight:700;box-shadow:inset 0 -2px var(--accent)}
 body[data-layout] .depart7{box-sizing:border-box;min-height:var(--lj-action-size);font-size:var(--lj-action-font);line-height:1.35;padding:6px 10px}
 body[data-layout] :is(.pkg-roots,.pkg10-roots) button{box-sizing:border-box;min-height:var(--lj-tab-size);font-size:13px;line-height:1.35}
 body[data-layout] .lj-material-paused{box-sizing:border-box;min-height:var(--lj-mini-size);padding:3px 6px;font-size:12px;line-height:1.35}
@@ -215,7 +217,7 @@ body[data-layout="desktop"] #ljMapPage .lj-reader-overlay{width:var(--side)}
 .lj-diagnostic-narrow>.copybar .btn{flex:1;min-width:0;width:auto;min-height:34px;white-space:normal}
 #diagCopyStatus{flex-basis:100%;font-size:11px;line-height:1.4;color:var(--muted)}
 #diagCopyStatus:empty{display:none}
-body[data-theme="night"]{--paper:#0f202b;--panel:#17313d;--ink:#f2fafc;--muted:#b4ced8;--accent:#71d7e8;--accent-dark:#71d7e8;--line:#3e5c69;--control-line:#7896a3;--soft:#204a5b;--hover:#1d3b47;--on-accent:#102b36;--warn:#ffd081;--warn-soft:#3d3d32;--ok:#79dbc2;--origin:#ff9c8f;--copper:#ffb26b;--glass:rgba(23,49,61,.95);--switch-off:#263f4a;--switch-knob:#9ab0ba;--surface-alt:#1b3542;--editor-bg:#102631;color-scheme:dark}
+body[data-theme="night"]{--paper:#0f202b;--panel:#17313d;--ink:#f2fafc;--muted:#b4ced8;--accent:#71d7e8;--accent-dark:#71d7e8;--line:#3e5c69;--control-line:#7896a3;--soft:#204a5b;--hover:#1d3b47;--on-accent:#102b36;--warn:#ffd081;--warn-soft:#3d3d32;--ok:#79dbc2;--origin:#ff9c8f;--copper:#ffb26b;--glass:rgba(23,49,61,.90);--switch-off:#263f4a;--switch-knob:#9ab0ba;--surface-alt:#1b3542;--editor-bg:#102631;color-scheme:dark}
 body[data-theme="night"] .device{--sea:#71d7e8;--accent:#71d7e8;--control-line:#7896a3;--on-accent:#102b36}
 body[data-theme="night"] .device .btn.primary{background:var(--sea);color:var(--on-accent);border-color:var(--sea)}
 body[data-theme="night"] .device .search-results,body[data-theme="night"] .device .search-history{background:var(--glass);color:var(--ink)}

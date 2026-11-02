@@ -91,3 +91,29 @@ test('map refreshes the same selected place after edits and ignores results from
     assert.deepEqual(selection.rows().map(row => row.id), ['new-container']);
   } finally { selection.destroy(); }
 });
+
+test('related display puts containers before favorites, keeps each group stable, and refreshes when favorites clear', async () => {
+  const { catalog, peerIds } = fixture();
+  try {
+    catalog.setPersonalPlaces({});
+    const source = await catalog.resolve('source');
+    const original = ['container-z', 'container-a', 'leaf-b', 'empty', 'leaf-a'];
+    assert.deepEqual((await catalog.relatedDisplay(source)).map(row => row.id), original);
+    const before = catalog.relatedDisplayRevision();
+    catalog.setPersonalPlaces({ livingJapanSettings: { favoritePlaceIds: ['leaf-a', 'container-a'] } });
+    assert.deepEqual((await catalog.relatedDisplay(source)).map(row => row.id), ['container-a', 'container-z', 'leaf-a', 'leaf-b', 'empty'],
+      'a favorite leaf stays below an unmarked container; favorites lead within each group');
+    assert.equal(catalog.relatedDisplayRevision(), before + 1, 'favorite changes invalidate the current map selection');
+    const marked = catalog.relatedDisplayRevision();
+    catalog.setPersonalPlaces({ livingJapanSettings: { favoritePlaceIds: ['container-a', 'leaf-a', 'leaf-a'] } });
+    assert.equal(catalog.relatedDisplayRevision(), marked, 'reordered or repeated marks do not change display priority');
+    catalog.setPersonalPlaces({ livingJapanSettings: { favoritePlaceIds: ['leaf-a', 'leaf-b', 'container-a', 'container-z'] } });
+    assert.deepEqual((await catalog.relatedDisplay(source)).map(row => row.id), ['container-z', 'container-a', 'leaf-b', 'leaf-a', 'empty'],
+      'favorites keep the original relative order rather than the mark order');
+    const allMarked = catalog.relatedDisplayRevision();
+    catalog.setPersonalPlaces({});
+    assert.equal(catalog.relatedDisplayRevision(), allMarked + 1, 'clearing favorites invalidates the same selected place immediately');
+    assert.deepEqual((await catalog.relatedDisplay(source)).map(row => row.id), original);
+    assert.deepEqual((await catalog.related(source)).map(row => row.id), peerIds, 'macro candidates and source order remain untouched');
+  } finally { catalog.destroy(); }
+});

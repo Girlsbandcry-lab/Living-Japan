@@ -17,6 +17,7 @@ import { createTextSearchSession } from './text-search-session.js';
 import { createSearchResultItem } from './search-result.js';
 import { normalizeSearchText as normalize, matchesSearchFields } from './search-text.js';
 import { applyPlaceEdit, normalizePlaceEdits, placeEditRecord, placeEditIdentityIds, placeEditPackageId } from './place-edits.js';
+import { normalizeFavoritePlaceIds, isFavoritePlace } from './place-favorites.js';
 
 // LJ-NATIONAL-01: source identities, official administration and sparse text slots.
 export function mapPointId(point) {
@@ -578,6 +579,7 @@ export function createCatalog({ baseData = {}, baseUrl, fetcher = globalThis.fet
   const entities = new Map(), baselineIds = new Set(), regionViews = new Map(), loaded = new Map();
   const builtinEntities = new Map();
   let personalState = { placeEdits: normalizePlaceEdits() }, editSignature = '';
+  let favoriteIds = [], favoriteSignature = '[]', favoriteRevision = 0;
   const projectPersonal = entity => applyPlaceEdit(entity, personalState);
   let regionSelections = new Map();
   const districts = new Map();
@@ -611,6 +613,8 @@ export function createCatalog({ baseData = {}, baseUrl, fetcher = globalThis.fet
     return [entity.adminNodeId, ...(entity.adminPath || []).slice().reverse()].find(id => admin?.nodes.has(id)) || unassignedId;
   }
   function setPersonalPlaces(container = {}) {
+    const nextFavorites = normalizeFavoritePlaceIds(container.livingJapanSettings?.favoritePlaceIds).sort(), nextFavoriteSignature = JSON.stringify(nextFavorites);
+    if (nextFavoriteSignature !== favoriteSignature) { favoriteIds = nextFavorites; favoriteSignature = nextFavoriteSignature; favoriteRevision++; }
     const nextEdits = normalizePlaceEdits(container.placeEdits), nextSignature = JSON.stringify(nextEdits);
     if (nextSignature !== editSignature) {
       personalState = { placeEdits: nextEdits }; editSignature = nextSignature; supplementVersion++;
@@ -1017,22 +1021,22 @@ export function createCatalog({ baseData = {}, baseUrl, fetcher = globalThis.fet
     if (!reviewed) for (const target of await run('nearby', source, { radiusMeters, limit: 64 })) add(remember(target), 'nearby', null, 1);
     return chooseRelatedPlaces([...result.values()], max).map(({ priority, ...target }) => target);
   }
-  // LJ-RELATED-CONTAINERS-20261102: UI siblings use current full membership; macro relations retain their original order.
+  // LJ-RELATED-CONTAINERS-20261102: UI relations show actual containers, then favorites; macro relations retain their original order.
   async function relatedDisplay(entity) {
     await loadIndex();
     const overture = index.runtimeSource?.kind === 'overture' || Boolean(entity?.livingAreaRole);
     const rows = await related(entity, overture ? {} : { limit: 7 });
     const peers = overture ? rows : chooseRelatedIntroductions(rows);
-    if (!peers.length || !peers.every(row => row.relationKind === 'same_parent')) return peers;
-    const graph = await getDirectory();
-    const ranked = await Promise.all(peers.map(async row => ({ row, hasChildren: Boolean((await graph.node(row.id))?.hasChildren) })));
-    return ranked.sort((a, b) => Number(b.hasChildren) - Number(a.hasChildren)).map(item => item.row);
+    if (!peers.length) return peers;
+    const graph = await getDirectory(), favorites = new Set(favoriteIds);
+    const ranked = await Promise.all(peers.map(async row => ({ row, hasChildren: Boolean((await graph.node(row.id))?.hasChildren), favorite: isFavoritePlace(row, favorites, baseData) })));
+    return ranked.sort((a, b) => Number(b.hasChildren) - Number(a.hasChildren) || Number(b.favorite) - Number(a.favorite)).map(item => item.row);
   }
   return { loadIndex, loadRegion, search, startTextSearch, textSearchPage: async (queryId, options) => presentSearchPage(await run('textSearchPage', queryId, options)), textSearchStats: () => run('textSearchStats'),
     startMapSearch, mapSearchPage: async (queryId, options) => presentSearchPage(await run('mapSearchPage', queryId, options)), mapSearchStats: () => run('mapSearchStats'),
     cancelSearch: scope => { searchListeners.delete(scope); return run('cancelSearch', scope, nextSearchVersion(scope)); }, children, browsePage, browseChildren, browseNode, browseParent, browseLocation, browseEntryId, normalizeBrowseState, adminChildren, navigationRoot, navigationChildren, navigationPath, district,
     availability: code => { const spec=[...(index?.views || []),...(index?.regions || [])].find(row=>row.code===String(code)); return {available:spec?.available !== false,packageId:spec?.packageId || index?.regionPackageIds?.[String(code)]}; },
-    get: getEntity, related, relatedDisplay, relatedDisplayRevision: () => supplementVersion, setPersonalPlaces, personalIds: () => [...new Set([...personalPlaces.keys(), ...Object.keys(personalState.placeEdits.created)])],
+    get: getEntity, related, relatedDisplay, relatedDisplayRevision: () => supplementVersion + favoriteRevision, setPersonalPlaces, personalIds: () => [...new Set([...personalPlaces.keys(), ...Object.keys(personalState.placeEdits.created)])],
     async resolveBuiltin(id) { await resolveEntity(id); return builtinEntities.get(canonicalIds.get(id) || id) || null; },
     resolve: resolveEntity, resolveLight: async id => Object.hasOwn(personalState.placeEdits.created, id) ? resolveEntity(id) : remember(await run('canonicalResolveLight', id)),
     resolveLights: async ids => (await Promise.all(ids.map(id => Object.hasOwn(personalState.placeEdits.created, id) ? resolveEntity(id) : run('canonicalResolveLight', id).then(remember)))).filter(Boolean),

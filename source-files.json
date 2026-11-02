@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "candidate": "source-v20261102.3",
+  "candidate": "source-v20261102.4",
   "publicationState": "candidate",
   "files": [
     {
@@ -70,15 +70,15 @@
       "path": "PROJECT_TODO.md",
       "origin": "PROJECT_TODO.md; public evidence links only",
       "mode": "generated",
-      "bytes": 1474,
-      "sha256": "c505aebc73c0cf15bc29963a7df9fdda99737ef8fedbab59ace5d3cac6217512"
+      "bytes": 1324,
+      "sha256": "c81453465a246a2ada417c6ca80e973a45cffbe4b6953e8fd0d4a948eb891b51"
     },
     {
       "path": "README.md",
       "origin": "README.md; source-role guidance",
       "mode": "generated",
-      "bytes": 3821,
-      "sha256": "b7e690f24fdaac2119884f5633b46d1041f1f2b9f4395f63db46c04a12a05218"
+      "bytes": 4011,
+      "sha256": "2c1bad1aede46836c2f5448ce5422e7de526d60c1c9cf1a966068fd4e289af3c"
     },
     {
       "path": "assets/map-icons/Apache-2.0.txt",
@@ -217,8 +217,8 @@
       "path": "docs/安装与恢复.md",
       "origin": "docs/安装与恢复.md",
       "mode": "copied",
-      "bytes": 4713,
-      "sha256": "9e4a8203cf26ab24dd7801b604251fba2701ac2ea5b394751b30ad38151dc7a3"
+      "bytes": 5121,
+      "sha256": "0290b487d3730a6eb36833becd1428f1e8455e9c458ca4aff4db7dd0716a1fc6"
     },
     {
       "path": "docs/来源与许可证.md",
@@ -231,15 +231,15 @@
       "path": "docs/源码协作与构建.md",
       "origin": "generated scope; dependency boundaries",
       "mode": "generated",
-      "bytes": 2637,
-      "sha256": "ee05121062b166392a90b09757a0dbb9e2047b5ed3800710640f5aef1a939e62"
+      "bytes": 2825,
+      "sha256": "d714e38707367b91b7ae394106f718ea8a60e82a4f4b1970d761eabcf0e94c4c"
     },
     {
       "path": "docs/验证说明.md",
       "origin": "generated; scoped verification",
       "mode": "generated",
-      "bytes": 2305,
-      "sha256": "af8c6b5dc64855620dc2882f5619b3cbbd04339a5e8a363bd979128efaeaead2"
+      "bytes": 2324,
+      "sha256": "6e2a2fe62befbeff51383a34e095176b6ff003205bb9e39b4f17eb0ffe86ae82"
     },
     {
       "path": "index.js",
@@ -253,7 +253,7 @@
       "origin": "manifest.json",
       "mode": "copied",
       "bytes": 288,
-      "sha256": "6aa2d2ec85aa7c12716009e38982e453a4b6c0bc09025ada0435e92e9bd0e013"
+      "sha256": "3228933a04ca2a9c819ad545cca676bee13ed941b487445f50393abd47ece893"
     },
     {
       "path": "package.json",
@@ -336,8 +336,8 @@
       "path": "src/catalog.js",
       "origin": "src/catalog.js",
       "mode": "copied",
-      "bytes": 87434,
-      "sha256": "f034c93593cba44da71f9629f3d17f3e5e7c42355000aedc6039076ac954f188"
+      "bytes": 88004,
+      "sha256": "6bbf715a46bd578f1c18e2607733dc67dcd77ebe46a1714f9781ddf5dd167bb9"
     },
     {
       "path": "src/chain-place-names.js",
@@ -728,8 +728,8 @@
       "path": "src/storage.js",
       "origin": "src/storage.js",
       "mode": "copied",
-      "bytes": 14238,
-      "sha256": "cbed128891b3e34bcb7805ffab56eff472b90b1b8fb8790ddf2eb33e90323f3d"
+      "bytes": 14343,
+      "sha256": "96b967a3da9d8f535c6d77e8ef0dbcdabcc73f6cbad5d34b270acb175bab93a6"
     },
     {
       "path": "src/text-resources.js",
@@ -795,6 +795,13 @@
       "sha256": "cba9980bbf62eb60d78d12b46384fc3d717074136dd3c6c6b1f9059c4ef2debf"
     },
     {
+      "path": "tests/map-splitter.test.mjs",
+      "origin": "tests/map-splitter.test.mjs",
+      "mode": "copied",
+      "bytes": 9199,
+      "sha256": "14456fc309d99667cd075a14badcf08cfaac28c889218d3d88ca180908504dca"
+    },
+    {
       "path": "tests/map-view-boundary.test.mjs",
       "origin": "tests/map-view-boundary.test.mjs",
       "mode": "copied",
@@ -847,8 +854,8 @@
       "path": "tests/place-navigation-ui.test.mjs",
       "origin": "tests/place-navigation-ui.test.mjs",
       "mode": "copied",
-      "bytes": 13589,
-      "sha256": "e361633434851a28fdc536ee5b773b8e299a54d8df5d1bcd5faa9e8f6a1a6b4d"
+      "bytes": 17351,
+      "sha256": "3ba5a1f8d8ed5bb3fa32ea51729986a347076c4cf45af6af3d9acd204a1e03de"
     },
     {
       "path": "tests/place-summary.test.mjs",
@@ -882,8 +889,8 @@
       "path": "tests/related-display-order.test.mjs",
       "origin": "tests/related-display-order.test.mjs",
       "mode": "copied",
-      "bytes": 6122,
-      "sha256": "a5a57cda146b7963752cd7c823baed0b236de0c06e6ae37a8553d23b997b3100"
+      "bytes": 8215,
+      "sha256": "645eacdf1da5c9b975cb548a746aab723fcb9f8fe5f87cb96c1f97e8cc483c93"
     },
     {
       "path": "tests/settings-ui.test.mjs",
@@ -924,15 +931,15 @@
       "path": "ui/controller.js",
       "origin": "ui/controller.js",
       "mode": "copied",
-      "bytes": 10505,
-      "sha256": "f11fa940eca00a5ea19ae29ac3c3cc32ee68c38fa53f7268ee43c46a11aa8948"
+      "bytes": 11056,
+      "sha256": "42b644b24f04cdc0059e7adae2bb1cbfd3c13b2f7809b9302931ec4dc78e255d"
     },
     {
       "path": "ui/desktop.html",
       "origin": "ui/desktop.html",
       "mode": "copied",
-      "bytes": 142404,
-      "sha256": "129a7ab3c21247f673cf3687087264c7a9417319fc4d9171da17419cccccbd65"
+      "bytes": 141941,
+      "sha256": "6158efc8990f1b2bc21ea8457930b12a642cfcccbae2b8f1aa06f0ba64deed70"
     },
     {
       "path": "ui/diagnostics.js",
@@ -959,22 +966,22 @@
       "path": "ui/guide.js",
       "origin": "ui/guide.js",
       "mode": "copied",
-      "bytes": 32924,
-      "sha256": "221d9d031e3bfa27cb56f6e7f6c5eb5b8f6165befda78dd0d4e11ca1e30236a6"
+      "bytes": 33239,
+      "sha256": "5415010b4736561f129337ea423f9881403416b2b8c900b74758f79246c53b7f"
     },
     {
       "path": "ui/map-splitter.js",
       "origin": "ui/map-splitter.js",
       "mode": "copied",
-      "bytes": 4441,
-      "sha256": "4f429a44a9e6d1d59a437a789b7fc0c0979773950bc2d4dd0d263e3941bacb1b"
+      "bytes": 4976,
+      "sha256": "b9e6e1598a4b717f481cd52b3513c11b8f48052252dbc46b6399cdab67dce80d"
     },
     {
       "path": "ui/map.js",
       "origin": "ui/map.js",
       "mode": "copied",
-      "bytes": 53193,
-      "sha256": "aa827481bead2473eceace54ea60a1eacd20ae1efb02c19faf5ba918fe824f00"
+      "bytes": 53945,
+      "sha256": "883f90d320baf3eb4d14d94966c3d1b94c8f7962977042f07c07e45a4a13ac01"
     },
     {
       "path": "ui/material-editor.js",
@@ -1001,8 +1008,8 @@
       "path": "ui/mobile.html",
       "origin": "ui/mobile.html",
       "mode": "copied",
-      "bytes": 96704,
-      "sha256": "b74779569189f14a26131d267b71ac259bb29fbf7929928c3c0e579c79fe3a90"
+      "bytes": 96133,
+      "sha256": "c7cbfe099cc6db6dda0a33fa0dd47a94111726aea7a7f0ad30333f0b87a413ee"
     },
     {
       "path": "ui/place-editor.css",
@@ -1029,8 +1036,8 @@
       "path": "ui/portrait.html",
       "origin": "ui/portrait.html",
       "mode": "copied",
-      "bytes": 68483,
-      "sha256": "157c39e793d738b5430697a62024bbac1006f619661bb2f4044eefa97e7f3df6"
+      "bytes": 67941,
+      "sha256": "f3a16df69ce03e862e88eb7c02ff54103942f011533ad437c2ddf59e1c99764c"
     },
     {
       "path": "ui/reader.css",
@@ -1050,8 +1057,8 @@
       "path": "ui/runtime.css",
       "origin": "ui/runtime.css",
       "mode": "copied",
-      "bytes": 38681,
-      "sha256": "09210fa6e1a37c043fa696949b2e981cd3e46adc87b3bb3819f058dd55b02d3a"
+      "bytes": 39144,
+      "sha256": "71a8a538f91388313e91bd2037b039d2b9fdc5484ab3d1b4dcc54e3cb65e01ea"
     },
     {
       "path": "ui/settings.css",

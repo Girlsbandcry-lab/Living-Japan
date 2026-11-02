@@ -122,9 +122,9 @@ export function createUserStore({ transport, initialData = {}, knownSlots = null
   function update(mutator, { expectedRevision } = {}) {
     return serial(async () => {
       if (!loaded) throw storageError('NOT_LOADED', '请先读取用户资料，再保存');
-      if (expectedRevision !== undefined && expectedRevision !== confirmed.revision) throw storageError('SAVE_CONFLICT', '资料已在其他操作中改变，请重新核对后保存');
+      if (expectedRevision !== undefined && expectedRevision !== confirmed.revision) throw storageError('SAVE_CONFLICT', '资料已在其他操作中更新。此次更改未保存；请先保留未保存的内容，再刷新页面后重试。');
       const remote = await transport.read();
-      if (!equal(remote, serverSnapshot)) throw storageError('SAVE_CONFLICT', '服务器已有更新的保存，请重新读取后核对；当前输入仍未保存');
+      if (!equal(remote, serverSnapshot)) throw storageError('SAVE_CONFLICT', '另一页面或设备已保存了新内容。此次更改未保存；请先保留未保存的内容，再刷新页面后重试。');
       const draft = clone(confirmed);
       const replacement = await mutator(draft);
       const next = normalizeContainer(replacement === undefined ? draft : replacement);

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { mountMap } from '../ui/map.js';
 import { mountBrowser } from '../ui/browse.js';
 import { esc } from '../ui/dom.js';
+import { createUserStore } from '../src/storage.js';
 
 // A DOM boundary fixture: run the live rendering and event handlers without a canvas or browser.
 function documentFixture() {
@@ -10,12 +11,14 @@ function documentFixture() {
   let document;
   function node(key = '') {
     if (nodes.has(key)) return nodes.get(key);
-    const events = new Map(), value = {
+    const events = new Map(), captured = new Set(), value = {
       id: key.startsWith('#') ? key.slice(1) : '', dataset: {}, style: {}, hidden: false,
       innerHTML: '', textContent: '', value: '', checked: false, scrollTop: 0, clientHeight: 0,
       children: [], classList: { add() {}, remove() {}, toggle() {} },
       setAttribute(name, value) { this[name] = value; }, removeAttribute(name) { delete this[name]; },
       addEventListener(name, fn) { events.set(name, fn); }, removeEventListener() {},
+      focus() {}, setPointerCapture(id) { captured.add(id); }, hasPointerCapture(id) { return captured.has(id); }, releasePointerCapture(id) { captured.delete(id); },
+      fire(name, extra = {}) { events.get(name)?.({ pointerId: 1, button: 0, isPrimary: true, clientY: 0, preventDefault() {}, stopPropagation() {}, ...extra }); },
       querySelector(selector) { return node(selector); }, querySelectorAll() { return []; },
       closest(selector) { return selector === '.region-list-scroll' ? node('region-scroll') : null; },
       insertAdjacentHTML(position, html) { if (position === 'afterend') node('inline-detail').innerHTML = html; else this.innerHTML += html; },
@@ -88,6 +91,56 @@ test('every map layout keeps actionable administration without a body and choose
       assert.equal(f.selected.length, 1, 'a refused reader leave must not switch the current place');
     } finally { map?.destroy(); f.restore(); }
   }
+});
+
+test('map split preferences survive a fresh store and layout changes, while failed saves retain the current session height', async () => {
+  let remote = { livingJapanUIPreferences: { panelPinned: true, mapSplitHeights: { portrait: 360, mobile: 220 } } }, writes = 0, fail = false;
+  const transport = { read: async () => structuredClone(remote), write: async value => { if (fail) throw new Error('测试保存失败'); remote = structuredClone(value); writes++; } };
+  const store = createUserStore({ transport }); await store.load();
+  function open(layout, currentStore, mapUi) {
+    const f = fixture(layout); f.ui.bridge.store = currentStore;
+    if (mapUi) f.ui.state.mapUi = mapUi;
+    const page = f.node('[data-page-root="map"]'), mapNode = f.node('#mapCanvas'), feed = f.node('#mapFeed'), related = f.node('#mapRelated');
+    const height = () => parseFloat(page.style.gridTemplateRows) || 319;
+    page.clientHeight = 812; page.getBoundingClientRect = () => ({ height: 812 });
+    mapNode.getBoundingClientRect = () => ({ height: height() });
+    feed.getBoundingClientRect = () => ({ top: height() });
+    related.getBoundingClientRect = () => ({ bottom: height() + 264 });
+    f.node('[data-page-root="map"]>.routebar').getBoundingClientRect = () => ({ height: 94 });
+    let map = mountMap(f.ui);
+    return { ...f, height, handle: () => page.children.at(-1), remount() { map.destroy(); map = mountMap(f.ui); }, close() { map.destroy(); f.restore(); } };
+  }
+  let f = open('portrait', store), session;
+  try {
+    assert.equal(f.height(), 360);
+    f.handle().fire('pointerdown', { clientY: 360 });
+    f.handle().fire('pointermove', { clientY: 380 }); f.handle().fire('pointermove', { clientY: 400 });
+    await settle(); assert.equal(writes, 0);
+    f.handle().fire('pointerup');
+    assert.equal(store.read().livingJapanUIPreferences.mapSplitHeights.portrait, 360, 'the queued save has not completed yet');
+    f.remount(); assert.equal(f.height(), 400, 'remount during a pending save keeps the just-adjusted session height');
+    await settle();
+    assert.equal(writes, 1); assert.deepEqual(remote.livingJapanUIPreferences.mapSplitHeights, { portrait: 400, mobile: 220 });
+    session = f.ui.state.mapUi;
+  } finally { f.close(); }
+  f = open('mobile', store, session);
+  try {
+    assert.equal(f.height(), 220); f.handle().fire('keydown', { key: 'ArrowDown' }); await settle();
+    assert.deepEqual(remote.livingJapanUIPreferences.mapSplitHeights, { portrait: 400, mobile: 244 });
+    assert.equal(remote.livingJapanUIPreferences.panelPinned, true);
+  } finally { f.close(); }
+  f = open('desktop', store, session); f.close();
+  f = open('portrait', store, session);
+  try { assert.equal(f.height(), 400); } finally { f.close(); }
+  const reloaded = createUserStore({ transport }); await reloaded.load();
+  f = open('portrait', reloaded);
+  try {
+    assert.equal(f.height(), 400, 'fresh app state restores the persisted height');
+    fail = true; f.handle().fire('keydown', { key: 'ArrowDown' }); await settle();
+    assert.equal(f.height(), 424); assert.deepEqual(f.errors, ['测试保存失败']);
+    assert.equal(remote.livingJapanUIPreferences.mapSplitHeights.portrait, 400);
+    f.remount(); assert.equal(f.height(), 424, 'remount must prefer the current session over a stale persisted value');
+  } finally { f.close(); }
 });
 
 test('each selected map heading keeps type above a standalone introduction and hides an empty introduction', async () => {

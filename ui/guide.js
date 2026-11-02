@@ -15,11 +15,11 @@ const groups = {
   map: [
     step('map', '[data-map-query]', '搜索已载入的地点', '输入名称、别名或类型，旁边可选搜索地区。结果按页查看，编号对应地图上的本页落点；清空搜索会退出结果。未载入地区可先到资料包管理下载。'),
     step('map', '.map-search-name7,.search-result-name,[data-lj-map="locate"]:not(:disabled)', '选中、定位、追加各有用途', '结果名称用于选中地点，图钉只移动地图。追加名称会放进聊天输入框；双击地图地点或地点大标题也可追加。需要正文时再点“详情”。', { fallbackTarget: '[data-map-query]', missingHint: '先搜索并选中一个已有地点，结果和地点操作区才会完整出现；可略过本项。' }),
-    step('map', ui => ui.layout === 'desktop' ? '[data-lj-map="full"],[data-map-mode]' : '#brandButton:not(:disabled),#fullMapReturn', '地图模式与全地图', ui => ui.layout === 'desktop' ? '顶栏“全地图”扩大地图，返回可恢复内容区。示意、地图、精细、超精细用于切换呈现；缩放和复原视野不会替你追加名称。' : '左上角四角框里的“大”进入全地图。全地图时百合只作标识，下方“返回”按钮恢复普通地图。示意、地图、精细、超精细切换呈现；加减号缩放，圆点按钮复原视野。'),
+    step('map', ui => ui.layout === 'desktop' ? '[data-lj-map="full"],[data-map-mode]' : '#brandButton:not(:disabled),#fullMapReturn', '地图模式与全地图', ui => ui.layout === 'desktop' ? '顶栏“全地图”扩大窗口内的地图区，左缘竖排“返回”恢复内容区。示意、地图、精细、超精细用于切换呈现；缩放和复原视野不会替你追加名称。' : '左上角四角框里的“大”进入全地图。全地图时百合只作标识，左缘竖排“返回”恢复普通地图。示意、地图、精细、超精细切换呈现；加减号缩放，圆点按钮复原视野。'),
     step('map', '[data-lj-map="origin"],[data-lj-map="destination"]', '组合起点、终点和出行方式', '分别给两个地点设起点、终点，再选公共交通、驾车、步行或自行车。“出发”追加交通参考文字；不可用时按钮会停用。清空起终点不删除地点，也不清空搜索。', { fallbackTarget: '[data-map-query]', missingHint: '先选中一处已有地点，才能看到它的起点、终点按钮；可略过本项。' }),
-    step('map', '[data-map-favorites] button', '四个常用位置会选中并定位', '点击快捷位置会选中并定位到保存的地点，再按需要设起点或终点。空槽会带你到地点设置填写；这四个位置与地区页的星形收藏分别保存。'),
+    step('map', '[data-map-favorites] button', '四个常用位置会选中并定位', '四槽沿地图边缘排列、文字竖排；手机版保留顶边四列。点击会选中并定位，空槽转到地点设置。它们与返回等地图浮动控件采用一致微透底色，与地区页星形收藏分别保存。'),
     step('map', ui => ui.layout === 'mobile' ? '[data-lj-map="history-menu"],[data-lj-map="stash-menu"]' : '[data-map-history]', '最近地点与手机版暂存', ui => ui.layout === 'mobile' ? '搜索旁的“最近”查看本次浏览记录；“暂存”可加入当前地点，之后返回继续选。暂存与最近列表用于找回地点，不等同于星形收藏或四个常用位置。' : '选过的地点会出现在最近列表，方便返回。手机版还在搜索旁提供“最近／暂存”菜单；这些浏览记录与星形收藏、四个常用位置分开。', { fallbackTarget: '[data-map-query]', missingHint: '最近列表在已有浏览记录时显示；手机版的暂存入口只在手机版提供，可略过本项。' }),
-    step('map', ui => ui.layout === 'desktop' ? '.side7,.related-list7' : '.lj-map-splitter,#mainPlaceDetail', '阅读区与地图的空间', ui => (ui.layout === 'desktop' ? '横版右侧显示当前地点及相关地点，详情打开正文阅读器。点相关地点可切换对象；收起内容区可腾出地图空间。' : '竖版、手机版可拖动地图和内容之间的双线柄调整比例。下方显示地点、相关地点和路线；“详情”读取正文，全地图下也保留对应入口。') + '同级相关地点中，有内部或下属地点的对象优先，同组保持原顺序。'),
+    step('map', ui => ui.layout === 'desktop' ? '.side7,.related-list7' : '.lj-map-splitter,#mainPlaceDetail', '阅读区与地图的空间', ui => (ui.layout === 'desktop' ? '横版右侧显示当前地点及相关地点，详情打开正文阅读器。点相关地点可切换对象；收起内容区可腾出地图空间。' : '拖动地图和内容之间的双线柄调整比例，竖版、手机版分别记住调好的分隔高度。下方显示地点、相关地点和路线；“详情”读取正文，全地图下也保留对应入口。') + '相关地点按有下级、收藏、同组原顺序显示；只影响界面，搜索和宏规则保持原状。'),
   ],
   locations: [
     step('region', '#loc10Search,#regionSearch', '搜索、修改稿和新增在顶部', ui => `这里是${ui.layout === 'desktop' ? '横版“地点”页' : '“地区”页'}。搜索名称、别名或类型；“只看更改”筛正文修改稿和自建／个人登记地点，“＋新增”建立地点草稿。搜索结果可翻页，清空后回到原来的浏览位置。`),
@@ -61,13 +61,13 @@ const groups = {
     step('diagnostic', '[data-lj-diag-action="copy"]', '需要帮助时复制完整诊断', '复制完整诊断结果会带当前选中记录的完整报告；全文页也能单独复制提示词或 JSON。试算不是发送，实际“宏已展开”也只证明扩展生成了内容，不证明模型已经收到。'),
   ],
   save: [
-    step('settings', '[data-settings-common="layout"],[data-settings-common="theme"]', '布局、主题和窗口操作', ui => (ui.layout === 'mobile' ? '手机自动使用手机布局，底部露出聊天输入框约1～2行。键盘弹出时窗口保持尺寸并整体上移，收起后复位；手机无需拖动或缩放。' : '横版、竖版可按住顶栏左侧六点柄拖动，在窗框右边、底边或右下角内侧缩放，各自记住位置和大小。聊天输入框增高不会挤小窗口。') + '主题、锁定即时保存；锁定只控制点面板外是否关闭。可从“备份与说明”重播导览。', { tab:'common' }),
+    step('settings', '[data-settings-common="layout"],[data-settings-common="theme"]', '布局、主题和窗口操作', ui => (ui.layout === 'mobile' ? '手机自动使用手机布局，底部露出聊天输入框约1～2行。键盘弹出时窗口保持尺寸并整体上移，收起后复位；手机无需拖动或缩放。' : '横版、竖版可按住顶栏左侧六点柄拖动，在窗框右边、底边或右下角内侧缩放，各自记住位置和大小。聊天输入框增高不会挤小窗口。') + '顶栏底色标记当前页，全地图仍选中“地图”。主题、锁定即时保存；锁定只控制点面板外是否关闭。可从“备份与说明”重播导览。', { tab:'common' }),
     step('settings', '[data-settings-common="masterEnabled"],[data-settings-common="layer:TN"]', '总提示、具名正文和四通道', '提示注入控制自动读取；手动追加名称和路线独立。具名地点正文、四条资料通道各有开关，暂停保留下级选择。“同级其他大生活带介绍”只管大生活带，不等同于地点分类配额。', { tab:'common' }),
     step('settings', '[data-settings-common="masterEnabled"]', '宏负责把资料放进生成提示', ui => `把${ui.engine?.data?.macroName?' {{'+ui.engine.data.macroName+'}} ':' Living Japan 宏 '}放在用于生成的世界书或提示词中，生成时由扩展展开符合读取与开关条件的资料。只在地图选中地点不会发送；追加名称只是先放进聊天输入框。`, { tab:'common' }),
     step('settings', '[data-settings-common="skipUserLocationInput"]', '需要时跳过本轮用户地点', '开启“跳过用户地点输入”后，地点改读 AI 回复；时间、天气继续照常读取。它不关闭地图、正文或整个资料通道。回看 AI 的范围由读取设置决定。', { tab:'common' }),
     step('settings', '[data-settings-reading="textScript"],[data-settings-reading="historyDepth"]', '文字、描写档位与回看层数', '读取设置可选简繁文字、描写档位和回看多少层 AI 回复；0 表示不回看。先在本页调整，最后用“保存读取设置”统一保存，不会连带保存四个常用位置。', { tab:'reading' }),
     step('settings', '[data-settings-boundary],[data-settings-channel],[data-settings-action="save-reading"]', '输入边界与四通道标签', '本轮用户输入的开始／结束标签要成对填写或一起留空。AI 回复按各通道的优先标签取材；有优先标签时不回退标签外，排除标签里的内容会跳过。多个标签可用顿号或逗号分隔，完成后保存本组。', { tab:'reading' }),
-    step('settings', '[data-settings-action="export"],[data-settings-action="import"]', '个人备份包含哪些内容', '完整备份包括地点个人修改、自建地点、正文与额外空位、资料词条、收藏隐藏及全部设置，不包含内置资料。导入先预览合并和覆盖范围；未对应旧稿仍在备份中保留。', { tab:'backup' }),
+    step('settings', '[data-settings-action="export"],[data-settings-action="import"]', '个人备份包含哪些内容', '完整备份包括地点个人修改、自建地点、正文与额外空位、资料词条、收藏隐藏及全部设置，不包含内置资料。导入先预览合并和覆盖范围；未对应旧稿仍在备份中保留。若提示另一页面或设备已保存新内容，先复制保留未保存内容，关闭重复页面，再刷新重试。', { tab:'backup' }),
     step('settings', '[data-settings-action="region-packs"],[data-settings-action="check-update"]', '程序更新与地区资料分开', '检查程序更新和地区资料更新分别进行；资料包管理负责下载、载入与启停，首都圈为常驻必需资料。更新内置保留个人修改，未覆盖字段读取新内置。这里也能查看更新记录，重播全部或任意分篇。', { tab:'backup' }),
   ],
 };

@@ -15,6 +15,15 @@ import { isHiddenPlace, hiddenPlaceId } from '../src/place-hidden.js';
 // LJ-EXT-VIEW: the approved three layouts share the same live state and operations.
 const bridge=parent.LivingJapanBridge, layout=document.body.dataset.layout;
 const pageIds={map:'ljMapPage',region:'ljLocationsPage',package:'ljPackagesPage',diagnostic:'ljDiagnosticsPage',settings:'ljSettingsPage'};
+const pageLabels={'地图':'map','地点':'region','地区':'region','资料':'package','检查':'diagnostic','诊断':'diagnostic'};
+// LJ-PAGE-NAV-SELECTION-20261102: all layouts expose the same current-page state, independent of hover and focus.
+function renderPageNavigation(page){
+  for(const button of $$('.nav7 button,.top .nav [data-go]')){
+    const active=(button.dataset.go||pageLabels[button.textContent.trim()])===page;
+    button.classList.toggle('on',active);button.classList.toggle('active',active);
+    if(active)button.setAttribute('aria-current','page');else button.removeAttribute('aria-current');
+  }
+}
 let modules={}, refreshing=false, selectionRequest=0, readerRequest=0;
 const ui={bridge,layout,state:bridge.state,esc,ask,notify:status,
   get engine(){return bridge.session.engine;},
@@ -33,6 +42,7 @@ const ui={bridge,layout,state:bridge.state,esc,ask,notify:status,
     ui.placeEditor?.suspend();ui.state.page=page;
     if(layout==='desktop')for(const [key,id]of Object.entries(pageIds))$('#'+id).hidden=key!==page;
     else{$$('[data-page-root]').forEach(n=>{const active=n.dataset.pageRoot===page;n.hidden=!active;n.classList.toggle('active',active);});$$('[data-go]').forEach(n=>n.classList.toggle('active',n.dataset.go===page));}
+    renderPageNavigation(page);
     await modules[page]?.render?.();modules.map?.renderBrandControl();ui.placeEditor?.render();return true;
   },
   async locateMaterial(entity,packageId,editing=false){const view=ui.reader.viewState();if(editing)view.mode='edit';ui.reader.suspend();if(await modules.package.locate(packageId))await ui.reader.open(entity,packageId,editing,view);},
@@ -74,7 +84,7 @@ document.addEventListener('click',async event=>{
   try{
     if(n.dataset.regionPackage){await bridge.openPackages({focusId:n.dataset.regionPackage});return;}
     if(n.dataset.go&&n.dataset.go!=='fullmap'){await ui.showPage(n.dataset.go);return;}
-    if(n.closest('.nav7')){const page={'地图':'map','地点':'region','地区':'region','资料':'package','检查':'diagnostic','诊断':'diagnostic'}[n.textContent.trim()];if(page)await ui.showPage(page);return;}
+    if(n.closest('.nav7')){const page=pageLabels[n.textContent.trim()];if(page)await ui.showPage(page);return;}
     const title=n.getAttribute('title')||'';
     if(n.id==='settingsButton'||(n.closest('.tools7')&&title==='设置'))await ui.showPage('settings');
     if(n.id==='themeButton'||title.startsWith('切换明暗')){const current=document.body.dataset.theme;await savePreference('theme',current==='night'?'day':'night');}

@@ -502,7 +502,18 @@ export function mountMap(ui) {
   const pageChange = event => { if (event.target.matches('[data-map-search-page]')) run(() => searchPage(event.target.value, true)); };
   const pageKeyDown = event => { if (event.key === 'Enter' && event.target.matches('[data-map-search-page]')) { event.preventDefault(); run(() => searchPage(event.target.value, true)); } };
   prepare();
-  if (!desktop) splitter = mountMapSplitter({ page: $('[data-page-root="map"]'), map: $('#mapCanvas'), feed: $('#mapFeed'), related: $('#mapRelated'), route: $('[data-page-root="map"]>.routebar'), state: local.splitHeights ||= {}, layout: ui.layout });
+  if (!desktop) {
+    // LJ-MAP-SPLIT-PERSIST-20261102: save completed user adjustments, keeping temporary content limits out of preferences.
+    local.splitHeights ||= {};
+    const saved = bridge.store.read().livingJapanUIPreferences?.mapSplitHeights || {};
+    for (const mode of ['portrait', 'mobile']) if (!Number.isFinite(local.splitHeights[mode]) && Number.isFinite(saved[mode]) && saved[mode] >= 0) local.splitHeights[mode] = saved[mode];
+    splitter = mountMapSplitter({ page: $('[data-page-root="map"]'), map: $('#mapCanvas'), feed: $('#mapFeed'), related: $('#mapRelated'), route: $('[data-page-root="map"]>.routebar'), state: local.splitHeights, layout: ui.layout,
+      onCommit: height => bridge.store.update(data => {
+        const preferences = data.livingJapanUIPreferences || {};
+        data.livingJapanUIPreferences = { ...preferences, mapSplitHeights: { ...preferences.mapSplitHeights, [ui.layout]: height } };
+      }).catch(error => ui.notify(error.message, 'error')),
+    });
+  }
   document.addEventListener('click', handleClick); document.addEventListener('dblclick', doubleClick);
   document.addEventListener('change', pageChange); document.addEventListener('keydown', pageKeyDown);
   async function render() {
