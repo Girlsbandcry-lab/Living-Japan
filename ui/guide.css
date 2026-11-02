@@ -1,0 +1,4 @@
+.lj-guide-layer{position:fixed;inset:0;z-index:9000;pointer-events:none}
+.lj-guide-ring{position:fixed;border:2px solid var(--accent);border-radius:5px;box-shadow:0 0 0 2px var(--panel);pointer-events:none}
+.lj-guide-card{position:fixed;width:min(340px,calc(100vw - 16px));box-sizing:border-box;overflow:auto;overscroll-behavior:contain;padding:12px;background:var(--panel);color:var(--ink);border:1px solid var(--control-line);border-radius:6px;box-shadow:0 6px 24px #0003;pointer-events:auto;font-size:14px;line-height:1.65}
+.lj-guide-card header{display:flex;align-items:flex-start;gap:10px}.lj-guide-card header strong{flex:1;font-size:16px}.lj-guide-card header span{flex:none;color:var(--muted);font-size:12px}.lj-guide-card p{margin:8px 0 12px}.lj-guide-card footer{display:flex;justify-content:flex-end;align-items:center;gap:7px;flex-wrap:wrap}.lj-guide-card footer button:first-child{margin-right:auto}
