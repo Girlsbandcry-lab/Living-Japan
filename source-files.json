@@ -218,14 +218,14 @@
       "origin": "generated scope; dependency boundaries",
       "mode": "generated",
       "bytes": 2553,
-      "sha256": "da0765f6c38eaba1a3e22a5904c80c1c5359c2ca6d005105f34a607b46c481bd"
+      "sha256": "ab256e4e6252408c198ecab64f5b849280ca0399713af9efe32bfc42d9df7897"
     },
     {
       "path": "docs/验证说明.md",
       "origin": "generated; scoped verification",
       "mode": "generated",
-      "bytes": 1644,
-      "sha256": "3ca9b6c3d00371d1a963b1d9f7e6d3415ce4a481819f0a139bdf7d0eddb5de81"
+      "bytes": 1695,
+      "sha256": "ee4d93e1a42c1ef579908950db115ff0db2f7bfe37e4026c943ff8a1c70abceb"
     },
     {
       "path": "index.js",
@@ -830,6 +830,13 @@
       "sha256": "818b97887cd56cda0f97db7da1efa96bb35bea2fcd191fe55186cec42d22a68b"
     },
     {
+      "path": "tests/place-editor-type.test.mjs",
+      "origin": "tests/place-editor-type.test.mjs",
+      "mode": "copied",
+      "bytes": 3650,
+      "sha256": "6eb362c231bd1c385455a593b2320705d439856657d49af1e5ddd1210838ba98"
+    },
+    {
       "path": "tests/place-favorites.test.mjs",
       "origin": "tests/place-favorites.test.mjs",
       "mode": "copied",
@@ -987,8 +994,8 @@
       "path": "ui/place-editor.js",
       "origin": "ui/place-editor.js",
       "mode": "copied",
-      "bytes": 20450,
-      "sha256": "d9c321051d97ad8bb192c70962aa72e86cc3054cae36879c73a3d69f86912cfe"
+      "bytes": 20854,
+      "sha256": "0a52f00f6dc7664859ac4e8657e272c42172492c6e4050c61709df2842fdffee"
     },
     {
       "path": "ui/place-summary.js",
