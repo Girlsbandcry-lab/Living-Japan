@@ -272,6 +272,7 @@ export function createCanonicalPlaces({ index, read, project, present = entity =
     return parentContexts.get(row.id);
   }
   async function searchMatch(original, tokens, options) {
+    if (options.excludedIds?.includes(original.id)) return null;
     let document = searchDocuments.get(original);
     if (!document) {
       const row = sanitizeIdentity(original), shown = present(augmentDisplayRepresentative(row)), purpose = metroPurposeType(row);

@@ -26,12 +26,12 @@ export function createTextSearchSession({ scan, formatItem = item => item, onUpd
     }
   }
   function start(query, { regionCode = 'metro', requestScope = 'text-search', requestVersion = 0, pageSize = 48,
-    entityIds, supplemental = [], supplementalSignature = '' } = {}) {
+    entityIds, supplemental = [], supplementalSignature = '', excludedIds = [] } = {}) {
     cancel(requestScope);
     const previous = current.get(requestScope); if (previous) jobs.delete(previous.queryId);
     const allowedIds = Array.isArray(entityIds) ? [...new Set(entityIds)].sort() : undefined;
     const allowed = allowedIds && new Set(allowedIds);
-    const key = JSON.stringify([tokenizeSearchQuery(query), regionCode, allowedIds, supplementalSignature || JSON.stringify(supplemental)]);
+    const key = JSON.stringify([tokenizeSearchQuery(query), regionCode, allowedIds, supplementalSignature || JSON.stringify(supplemental), excludedIds]);
     const job = { queryId: `text-search:${++sequence}`, query: String(query || '').trim(), regionCode, requestScope, requestVersion,
       pageSize: pageLength(pageSize), controller: new AbortController(), items: [], scanned: 0, complete: false };
     jobs.set(job.queryId, job); current.set(requestScope, job);
@@ -53,7 +53,7 @@ export function createTextSearchSession({ scan, formatItem = item => item, onUpd
       if (!isCurrent(job)) return;
       counts.scanStarts++;
       try {
-        const result = await scan(job.query, { regionCode, entityIds: allowedIds, signal: job.controller.signal,
+        const result = await scan(job.query, { regionCode, entityIds: allowedIds, ...(excludedIds.length ? { excludedIds } : {}), signal: job.controller.signal,
           onBatch(batch, progress) {
             if (!isCurrent(job)) return;
             recordScanned(progress?.scanned);

@@ -9,6 +9,8 @@ import { mountGuide } from './guide.js';
 import { createMaterialEditor } from './material-editor.js';
 import { injectionName } from '../src/injection-names.js';
 import { mountUpdateIndicator } from './update-indicator.js';
+import { createPlaceEditor } from './place-editor.js';
+import { isHiddenPlace, hiddenPlaceId } from '../src/place-hidden.js';
 
 // LJ-EXT-VIEW: the approved three layouts share the same live state and operations.
 const bridge=parent.LivingJapanBridge, layout=document.body.dataset.layout;
@@ -28,22 +30,26 @@ const ui={bridge,layout,state:bridge.state,esc,ask,notify:status,
     if(!pageIds[page])return false;
     if(!(await ui.reader.close()))return false;
     if(ui.state.page==='settings'&&page!=='settings'&&modules.settings.requestLeave&&!(await modules.settings.requestLeave()))return false;
-    ui.state.page=page;
+    ui.placeEditor?.suspend();ui.state.page=page;
     if(layout==='desktop')for(const [key,id]of Object.entries(pageIds))$('#'+id).hidden=key!==page;
     else{$$('[data-page-root]').forEach(n=>{const active=n.dataset.pageRoot===page;n.hidden=!active;n.classList.toggle('active',active);});$$('[data-go]').forEach(n=>n.classList.toggle('active',n.dataset.go===page));}
-    await modules[page]?.render?.();return true;
+    await modules[page]?.render?.();modules.map?.renderBrandControl();ui.placeEditor?.render();return true;
   },
   async locateMaterial(entity,packageId,editing=false){const view=ui.reader.viewState();if(editing)view.mode='edit';ui.reader.suspend();if(await modules.package.locate(packageId))await ui.reader.open(entity,packageId,editing,view);},
   async locateMaterialNode(id){return modules.package.locate(id);},
   async locateRegion(entity,packageId,editing=false){const view=ui.reader.viewState();if(editing)view.mode='edit';const located=await bridge.catalog.resolve(entity.id,{regionCode:entity.regionCode||ui.state.regionCode})||entity;ui.reader.suspend();if(!(await ui.showPage('region')))return;await modules.region.locate(located);await ui.reader.open(located,packageId,editing,view);},
-  async openSettings(tab='reading',channel){if(ui.state.page==='settings'&&!(await modules.settings.requestLeave()))return false;if(!(await ui.showPage('settings')))return false;modules.settings.openTab(tab,channel);return true;},
+  async openSettings(tab='reading',channel){if(ui.state.page!=='settings'&&!(await ui.showPage('settings')))return false;modules.settings.openTab(tab,channel);return true;},
   async selectEntity(entity,options={}){const ticket=++selectionRequest;if(!entity)return;if(entity.canonicalIndexOnly)entity=await bridge.catalog.resolve(entity.id,{regionCode:entity.regionCode})||entity;await bridge.session.ensureSummaries?.([entity]);if(ticket!==selectionRequest)return;ui.state.selected=entity;ui.state.selectedId=entity.id;await modules.map?.select?.(entity,options);},
   async openReader(entity,packageId,editing=false){const ticket=++readerRequest;if(!entity&&packageId)entity=ui.getEntityForPackage(packageId);if(entity?.canonicalIndexOnly)entity=await bridge.catalog.resolve(entity.id,{regionCode:entity.regionCode})||entity;if(ticket!==readerRequest)return;if(entity)await ui.reader.open(entity,packageId,editing);},
   append(entity){const name=injectionName(entity,ui.engine.data);if(!name)return;const result=bridge.append(name);ui.notify(result?.ok?'名称已追加到输入框':result?.error||'没有找到聊天输入框',result?.ok?'':'error');return result;},
-  async refresh(){if(refreshing)return;refreshing=true;try{await bridge.session.refresh();renderTools();await modules[ui.state.page]?.render?.();}finally{refreshing=false;}},
+  async beginPositionPick(position){await modules.map.beginPositionPick(position);},
+  async locateSavedPlace(id){const entity=await bridge.catalog.resolve(id,{regionCode:ui.state.regionCode});if(!entity)return;if(!(await ui.showPage('region')))return;await modules.region.locate(entity);},
+  async setPlaceHidden(entity,value){await bridge.store.update(data=>{data.livingJapanSettings||={};const ids=data.livingJapanSettings.hiddenPlaceIds||[];data.livingJapanSettings.hiddenPlaceIds=value?[...new Set([...ids,hiddenPlaceId(entity,ui.engine.data)])]:ids.filter(id=>!isHiddenPlace(entity,[id],ui.engine.data));});await ui.refresh();},
+  async refresh(){if(refreshing)return;refreshing=true;try{await bridge.session.refresh();renderTools();await modules[ui.state.page]?.render?.();ui.placeEditor?.render();}finally{refreshing=false;}},
 };
 ui.reader=createReader(ui);
 ui.materialEditor=createMaterialEditor(ui);
+ui.placeEditor=createPlaceEditor(ui);
 // LJ-APPROVED-WINDOW-CLOSE-20261030: connect the confirmed narrow × control to the real leave-aware close.
 for(const button of $$('.top .win button[aria-label="关闭说明"]')){button.dataset.windowClose='true';button.title='关闭';button.setAttribute('aria-label','关闭');}
 const unmountWindowDrag=bridge.mountWindowDrag($('.top7')||$('.top'));
@@ -76,6 +82,6 @@ document.addEventListener('click',async event=>{
 });
 document.addEventListener('living-japan-settings-tab',event=>{ui.openSettings(event.detail?.tab||event.detail||'reading',event.detail?.channel).catch(error=>ui.notify(error.message,'error'));});
 const unsubscribe=bridge.subscribe(()=>{renderTools();if(['diagnostic','map'].includes(ui.state.page))modules[ui.state.page]?.render?.();});
-globalThis.LivingJapanView={ui,modules,async leave(){if(!(await ui.reader.close()))return false;return modules.settings.requestLeave?modules.settings.requestLeave():true;}};
+globalThis.LivingJapanView={ui,modules,async leave(){if(!(await ui.reader.close())||!(await ui.placeEditor.requestLeave()))return false;return modules.settings.requestLeave?modules.settings.requestLeave():true;},async prepareLayoutChange(){if(!(await ui.reader.close()))return false;if(modules.settings.requestLeave&&!(await modules.settings.requestLeave()))return false;ui.placeEditor.suspend();return true;}};
 window.addEventListener('unload',()=>{unsubscribe();unmountWindowDrag();ui.guide.destroy();ui.updateIndicator.destroy();modules.map?.destroy?.();},{once:true});
 try{renderTools();await ui.showPage(ui.state.page||'map');$('#ljLoading').remove();ui.guide.offer().catch(error=>ui.notify(error.message,'error'));}catch(error){$('#ljLoading').textContent=`资料读取失败：${error.message}`;console.error(error);}

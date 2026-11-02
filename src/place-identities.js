@@ -4,6 +4,7 @@ import { displayRepresentativeId, isSecondaryDisplayPoint, augmentDisplayReprese
 import { presentStation } from './station-presentation.js';
 import { isRetiredLivingArea } from './living-area-retirement.js';
 import { regionBackgroundRelations } from './region-selections.js';
+import { applyPlaceEdit } from './place-edits.js';
 const unique = values => [...new Set(values.filter(value => typeof value === 'string' && value))];
 const ownIds = entity => unique([entity?.legacyPlaceId, entity?.id, ...(entity?.sourceIds || []), ...(entity?.allSourceIds || [])]);
 
@@ -86,12 +87,13 @@ export async function createCanonicalContextPreparer({ data, catalog, index, bas
   const overture = index.runtimeSource?.kind === 'overture';
   const contexts = { aliases: {}, rows: {}, adminNodes: Object.fromEntries((index.adminNodes || []).map(node => [node.id, node])) }, resolved = new Set(), expanded = new Set(), baselineIds = new Set();
   let revision = 0;
+  let personalContainer = {};
   const register = source => {
     if (!source?.id || isRetiredLivingArea(source) || isSecondaryDisplayPoint(source)) return null;
     source = sanitizeIdentity(augmentDisplayRepresentative(source));
     source = presentStation(source, data);
     if (!contexts.rows[source.id] || contexts.rows[source.id].canonicalIndexOnly && !source.canonicalIndexOnly) {
-      const keys = ['id', 'name', 'originalName', 'activationName', 'displayType', 'legacyPlaceId', 'aliases', 'fullNames', 'chainBrand', 'chainBrandAliases', 'chainNameSource', 'chainSearchOnlyNames', 'packageIds', 'type', 'subtype', 'kind', 'regionCode', 'adminNodeId', 'adminPath', 'adminNodes', 'coordinates', 'summary', 'hasSummary', 'officialRail', 'livingAreaRole', 'displayAnchorCoordinates', 'livingAreaBounds', 'livingAreaAnchorSource', 'materialTypeId'];
+      const keys = ['id', 'name', 'originalName', 'activationName', 'displayType', 'legacyPlaceId', 'aliases', 'fullNames', 'chainBrand', 'chainBrandAliases', 'chainNameSource', 'chainSearchOnlyNames', 'packageIds', 'type', 'subtype', 'typePathIds', 'categoryCode', 'kind', 'regionCode', 'adminNodeId', 'adminPath', 'adminNodes', 'coordinates', 'summary', 'hasSummary', 'officialRail', 'livingAreaRole', 'displayAnchorCoordinates', 'livingAreaBounds', 'livingAreaAnchorSource', 'materialTypeId'];
       const row = Object.fromEntries(keys.filter(key => source[key] !== undefined).map(key => [key, source[key]]));
       row.sourceIds = ownIds(source); row.canonicalPlace = true;
       if (source.canonicalIndexOnly) row.canonicalIndexOnly = true;
@@ -124,7 +126,7 @@ export async function createCanonicalContextPreparer({ data, catalog, index, bas
     const known = contexts.rows[contexts.aliases[id] || id];
     if (known && !known.canonicalIndexOnly) return known;
     if (resolved.has(id)) return null;
-    const entity = await catalog.resolve(id);
+    const entity = await catalog.resolveBuiltin?.(id) || await catalog.resolve(id);
     resolved.add(id);
     return entity?.canonicalPlace ? register(entity) : null;
   }
@@ -138,7 +140,8 @@ export async function createCanonicalContextPreparer({ data, catalog, index, bas
   async function expandGraph(ids, includePeerAreas = false) {
     const chain = new Set(), queue = [...ids], large = new Set();
     while (queue.length) {
-      const row = await resolve(queue.shift());
+      const builtin = await resolve(queue.shift());
+      const row = applyPlaceEdit(builtin, personalContainer);
       if (!row || chain.has(row.id)) continue;
       chain.add(row.id);
       if (row.livingAreaRole === 'large') large.add(row.id);
@@ -158,9 +161,12 @@ export async function createCanonicalContextPreparer({ data, catalog, index, bas
     }
   }
   const prepare = async container => {
+    personalContainer = container;
     catalog.setPersonalPlaces?.(container);
     const before = revision, library = container.materialLibrary || {};
-    const ids = unique([...Object.values(container.customSlots || {}).map(slot => slot.entityId), ...Object.keys(library.places || {}), ...Object.values(library.bindings || {}).map(binding => binding.entityId)]);
+    const edits = container.placeEdits || {};
+    const ids = unique([...Object.values(container.customSlots || {}).map(slot => slot.entityId), ...Object.keys(library.places || {}), ...Object.values(library.bindings || {}).map(binding => binding.entityId),
+      ...Object.keys(edits.overrides || {}), ...Object.keys(edits.created || {}), ...Object.values({ ...edits.overrides, ...edits.created }).map(row => row.parentId)]);
     if (overture) { await expandGraph(ids); return revision !== before; }
     for (const id of ids) {
       const row = await resolve(id);
@@ -181,6 +187,9 @@ export async function createCanonicalContextPreparer({ data, catalog, index, bas
     }
     return revision !== before;
   };
+  prepare.resolve = id => catalog.resolve(id);
+  prepare.resolveBuiltin = id => catalog.resolveBuiltin?.(id);
+  prepare.browseNode = id => catalog.browseNode(id);
   if (overture) prepare.prepareRequest = async (messages, settings, { engine, requestType = 'normal' } = {}) => {
     const before = revision;
     if (settings.masterEnabled === false || settings.layers?.EX === false) return { directPlaceIds: [], changed: false,

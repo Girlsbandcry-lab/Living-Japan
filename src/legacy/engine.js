@@ -5,6 +5,9 @@ import { MATERIAL_LAYER_LABELS } from '../material-catalog.js';
 import { placeIntroduction } from '../place-metadata.js';
 import { canonicalPlaceContext, placeDistrictContexts, placeIdentityIds, placeParentContexts } from '../place-identities.js';
 import { chooseRelatedIntroductions } from '../related-place-selection.js';
+import { normalizePeerPlaceQuotas } from '../peer-place-selection.js';
+import { normalizeFavoritePlaceIds } from '../place-favorites.js';
+import { normalizeHiddenPlaceIds, isHiddenPlace } from '../place-hidden.js';
 
 export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
   var TEXT_CONVERTER = TEXT_SCRIPT.createConverter(DATA.textConversion || {});
@@ -672,7 +675,7 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
   }
 
   function normalizeOverrideRecord(record, slotKey) {
-    if (!record || typeof record !== 'object' || typeof record.body !== 'string' || !record.body.trim()) return null;
+    if (!record || typeof record !== 'object' || typeof record.body !== 'string') return null;
     return {
       packageId: typeof record.packageId === 'string' ? record.packageId : '',
       calendarSegmentId: typeof record.calendarSegmentId === 'string' ? record.calendarSegmentId : null,
@@ -763,7 +766,7 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
     var builtinBody = variant ? variant.body : resolveRuntimeBody(packageItem, state);
     var store = overrideStore && overrideStore.records ? overrideStore : emptyTextOverrides();
     var record = variant ? store.records[variant.slotKey] : null;
-    if (!record || typeof record.body !== 'string' || !record.body.trim()) {
+    if (!record || typeof record.body !== 'string') {
       return {
         body: builtinBody,
         custom: false,
@@ -782,7 +785,7 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
   }
 
   function createOverrideRecord(variant, body) {
-    if (!variant || typeof body !== 'string' || !body.trim()) throw new Error('正文不能为空；如需停用，请关闭资料包');
+    if (!variant || typeof body !== 'string') throw new Error('正文必须是文字');
     return {
       packageId: variant.packageId,
       calendarSegmentId: variant.calendarSegmentId || null,
@@ -838,7 +841,7 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
     function accept(record) {
       summary.total += 1;
       if (!record || typeof record !== 'object' || typeof record.slotKey !== 'string' ||
-        typeof record.packageId !== 'string' || typeof record.body !== 'string' || !record.body.trim()) {
+        typeof record.packageId !== 'string' || typeof record.body !== 'string') {
         throw new Error('自定义正文文件含无效记录');
       }
       if (seen.has(record.slotKey)) throw new Error('自定义正文文件含重复记录：' + record.slotKey);
@@ -1144,6 +1147,9 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
     var migration = DATA.settingsMigration && DATA.settingsMigration.legacyV2 ? DATA.settingsMigration.legacyV2 : null;
     defaults.masterEnabled = typeof value.masterEnabled === 'boolean' ? value.masterEnabled : defaults.masterEnabled;
     defaults.expandPeerLivingAreas = value.expandPeerLivingAreas === true;
+    defaults.peerPlaceQuotas = normalizePeerPlaceQuotas(value.peerPlaceQuotas);
+    defaults.favoritePlaceIds = normalizeFavoritePlaceIds(value.favoritePlaceIds);
+    defaults.hiddenPlaceIds = normalizeHiddenPlaceIds(value.hiddenPlaceIds);
     defaults.skipUserLocationInput = value.skipUserLocationInput === true;
     defaults.namedPlaceBodiesEnabled = typeof value.namedPlaceBodiesEnabled === 'boolean'
       ? value.namedPlaceBodiesEnabled : defaults.namedPlaceBodiesEnabled;
@@ -1979,11 +1985,14 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
 
   function resolveCanonicalPlaceMatchDetailed(entries, candidates, storyState) {
     var transient = (candidates || []).map(function (row, order) {
-      var names = Array.from(new Set([row.activationName || row.name].concat(row.fullNames || []).filter(Boolean)));
+      var personalTriggers = Array.isArray(row.personalFullTriggers);
+      var names = Array.from(new Set((personalTriggers ? row.personalFullTriggers : [row.activationName || row.name].concat(row.fullNames || [])).filter(Boolean)));
       return Object.assign({}, row, { id: row.id, placeId: row.id, displayName: row.name, order: order, layer: 'EX',
         sourceObjectId: row.id, placeKind: row.kind === 'station' ? 'station' : 'content_object',
-        fullTriggers: names, directTriggers: names, aliasTriggers: row.aliasTriggers || [],
-        conditionalTriggers: row.conditionalTriggers || [], links: row.links || [] });
+        fullTriggers: names, directTriggers: names, aliasTriggers: personalTriggers ? [] : row.aliasTriggers || [],
+        conditionalTriggers: personalTriggers ? [] : row.conditionalTriggers || [],
+        dateConditionalTriggers: personalTriggers ? [] : row.dateConditionalTriggers || [],
+        locationComposite: personalTriggers ? null : row.locationComposite, links: row.links || [] });
     });
     var result = resolveNonTimeChannel(entries || [], 'EX', storyState || null, transient);
     return {
@@ -2383,6 +2392,7 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
         if (anchor && !target) return;
         var id = target ? target.id : relation.targetObjectId;
         if (target && activeIds.has(canonicalId(target.id))) return;
+        if (isHiddenPlace(target || id, settings.hiddenPlaceIds, DATA)) return;
         var clean = String(target ? target.name : (((DATA.namedStationParents || {}).interestInjectionNames || {})[id]) || relation.fullName || '').trim();
         if (!clean) return;
         if (!stationObjectIds.has(id)) { stationObjectIds.add(id); names.push(clean); }
@@ -2417,17 +2427,18 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
       if (seen.has(entity.id)) return;
       seen.add(entity.id);
       var own = placeIntroduction(entity, DATA).trim();
-      if (own && !withBody.has(identity(entity.id))) result.own.push({ id: entity.id, name: entity.name || entity.label, summary: own });
+      if (own && !isHiddenPlace(entity, settings.hiddenPlaceIds, DATA) && !withBody.has(identity(entity.id))) result.own.push({ id: entity.id, name: entity.name || entity.label, summary: own });
       var parents = placeParentContexts(entity, DATA), regionPath = [];
       for (var admin of parents.filter(function (parent) { return parent.relationKind === 'administrative_parent'; })) {
+        if (isHiddenPlace(admin, settings.hiddenPlaceIds, DATA)) continue;
         var adminIds = new Set((admin.adminPath || []).concat(admin.id));
         if (DATA.controlGroups.some(function (group) { return group.kind === 'administrative' && group.layer === 'EX' && adminIds.has(group.adminNodeId) && settings.groups[group.controlGroupId] === false; })) break;
         regionPath.push({ id: admin.id, name: admin.name || admin.label });
       }
-      if (regionPath.length) result.regions.push({ id: entity.id, name: entity.name || entity.label, path: regionPath });
+      if (regionPath.length) result.regions.push({ id: entity.id, name: isHiddenPlace(entity, settings.hiddenPlaceIds, DATA) ? '所属地区' : entity.name || entity.label, path: regionPath });
       parents.forEach(function (parent) {
         var id = identity(parent.id);
-        if (parentIds.has(id)) return;
+        if (parentIds.has(id) || isHiddenPlace(parent, settings.hiddenPlaceIds, DATA)) return;
         parentIds.add(id);
         if (active.has(id)) return;
         var ids = new Set(placeIdentityIds(parent, DATA));
@@ -2439,7 +2450,7 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
       });
       placeDistrictContexts(entity, DATA).forEach(function (district) {
         var id = identity(district.id);
-        if (active.has(id) || seenDistricts.has(id)) return;
+        if (active.has(id) || seenDistricts.has(id) || isHiddenPlace(district, settings.hiddenPlaceIds, DATA)) return;
         var ids = new Set(placeIdentityIds(district, DATA));
         var districtPackages = DATA.packages.filter(function (candidate) { return ids.has(candidate.placeId); });
         if (districtPackages.length && !districtPackages.some(function (candidate) { return !packageBlockReason(candidate, settings); })) return;
@@ -2458,7 +2469,7 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
     var settings = normalizeSettings(rawSettings);
     var textOverrides = normalizeTextOverrides(options && options.textOverrides);
     var livingExpansion = options && Array.isArray(options.directPlaceIds)
-      ? createLivingAreaExpansion(DATA, options.directPlaceIds, settings) : null;
+      ? createLivingAreaExpansion(DATA, options.directPlaceIds, settings, options) : null;
     var requestType = options && options.requestType ? options.requestType : 'normal';
     var diagnostics = {
       requestType: requestType,
@@ -2879,9 +2890,10 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
       }
       return runtimeItem;
     });
+    var hiddenOwnPackage = function (item) { return Boolean(item.placeId && !item.materialFragmentId && isHiddenPlace(item.placeId, settings.hiddenPlaceIds, DATA)); };
     var seenBodies = new Set();
     var unique = effectiveSorted.filter(function (item) {
-      if (livingExpansion) return true;
+      if (livingExpansion || hiddenOwnPackage(item)) return true;
       if (!String(item.body || '').trim()) return true;
       if (seenBodies.has(item.body)) {
         diagnostics.duplicatesRemoved.push({ id: item.id, displayName: item.displayName });
@@ -2980,12 +2992,26 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
       placeContexts: livingExpansion ? livingExpansion.materialContexts : [], storyState: restoredTimeState,
       resolveBody: function (item) { return resolveEffectiveBody(item, restoredTimeState, textOverrides); },
       blockReason: function (item) { return packageBlockReason(item, settings); } });
-    actualPackages = actualPackages.filter(materialResult.legacyAllowed).concat(materialResult.packages);
+    actualPackages = actualPackages.filter(materialResult.legacyAllowed).concat(materialResult.packages).filter(function (item) { return !hiddenOwnPackage(item); });
     var livingOutput = livingExpansion ? renderLivingAreaExpansion(DATA, livingExpansion, actualPackages, materialResult) : null;
     if (livingOutput) {
       actualPackages = actualPackages.filter(function (item) { return livingOutput.emittedPackageIds.includes(item.id); });
-      diagnostics.livingAreaExpansion = { directPlaceIds: [...livingExpansion.directIds], placedPackageIds: livingOutput.placedPackageIds, duplicatePackageIds: livingOutput.duplicatePackageIds };
+      diagnostics.livingAreaExpansion = { directPlaceIds: [...livingExpansion.directIds], placedPackageIds: livingOutput.placedPackageIds, duplicatePackageIds: livingOutput.duplicatePackageIds, peerSelections: livingExpansion.peerSelections };
     }
+    diagnostics.linkedPackages.forEach(function (record) {
+      var target = getPackageById(record.target), source = getPackageById(record.source);
+      if (target && hiddenOwnPackage(target) && record.status === 'injected') record.status = 'hidden';
+      if (source && hiddenOwnPackage(source)) record.sourceInjected = false;
+    });
+    diagnostics.namedStationParents.forEach(function (record) {
+      record.hiddenStationPlaceIds = record.stationStates.filter(function (state) {
+        if (!state.selected || !isHiddenPlace(state.stationPlaceId, settings.hiddenPlaceIds, DATA)) return false;
+        state.status = 'hidden'; return true;
+      }).map(function (state) { return state.stationPlaceId; });
+      record.injectedStationPlaceIds = record.injectedStationPlaceIds.filter(function (id) { return !record.hiddenStationPlaceIds.includes(id); });
+      record.emptyStationPlaceIds = record.emptyStationPlaceIds.filter(function (id) { return !record.hiddenStationPlaceIds.includes(id); });
+      if (record.hiddenStationPlaceIds.length && !record.injectedStationPlaceIds.length && !record.emptyStationPlaceIds.length) record.status = 'hidden';
+    });
     diagnostics.materialPipeline = materialResult.diagnostics;
     // LJ-Q10-OVERRIDE-20261102: retain the effective personal-draft metadata in emitted material diagnostics.
     diagnostics.injectedPackages = diagnostics.injectedPackages.filter(function (entry) { return actualPackages.some(function (item) { return item.id === entry.id; }); })

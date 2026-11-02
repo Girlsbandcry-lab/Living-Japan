@@ -8,6 +8,7 @@ import { placeActivationName } from './station-presentation.js';
 import { createTextResources, addBuiltinContextAnchors } from './text-resources.js';
 import { retireLivingAreaRuntime } from './living-area-retirement.js';
 import { chainPlaceIdentity, chainPlaceTriggers, withoutChainBrands } from './chain-place-names.js';
+import { applyPlaceEditsToData, placeEditUserSlots, placeEditMaterialLibrary } from './place-edits.js';
 
 // LJ-EXT-BASELINE
 const clone = value => JSON.parse(JSON.stringify(value));
@@ -23,12 +24,13 @@ export function createBaselineEngine(data, userData = {}) {
 }
 
 export function addUserDataToData(data, container = {}) {
-  const compiled = addMaterialLibraryToData(addUserSlotsToData(data, container.customSlots), container.materialLibrary);
+  const compiled = applyPlaceEditsToData(addMaterialLibraryToData(addUserSlotsToData(data, placeEditUserSlots(container, data)), placeEditMaterialLibrary(data, container)), container);
   if (compiled.canonicalPlaceContexts) for (const item of compiled.packages) {
     if (!item.placeId || !['EX', 'IN'].includes(item.layer) || item.matchMode === 'link_only') continue;
     const row = canonicalPlaceContext(item.placeId, compiled);
     if (!row?.name) continue;
     item.canonicalPlaceId = row.id;
+    if (Array.isArray(item.personalFullTriggers)) continue;
     const activationName = placeActivationName(row, compiled);
     item.directTriggers = chainPlaceTriggers(row, [...(item.directTriggers || []), activationName]);
     item.fullTriggers = chainPlaceTriggers(row, [...(item.fullTriggers || []), activationName]);

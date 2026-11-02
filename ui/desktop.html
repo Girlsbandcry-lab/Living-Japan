@@ -149,12 +149,11 @@
 .loc10-meta{flex-wrap:wrap}.loc10-meta>span{white-space:normal;overflow-wrap:anywhere}
 .loc10-detailhead h2{white-space:normal!important;overflow-wrap:anywhere}.loc10-recordactions{flex-wrap:wrap}.lj-detail-path{padding-top:9px!important;padding-bottom:9px!important;color:var(--muted);font-size:12px}
 .lj-detail-body{white-space:pre-wrap;line-height:1.85!important;font-size:14px!important}
-#ljLocationsPage .loc10-pagehead{gap:12px;padding:0 16px}
+#ljLocationsPage .loc10-pagehead{gap:8px;padding:0 16px}
 #ljLocationsPage .loc10-pagetitle{flex:none;gap:9px}
 #ljLocationsPage .loc10-pagetitle span{color:var(--muted);font-size:13px}
-#ljLocationsPage .loc10-search{flex:1;min-width:220px;width:auto;margin-left:auto}
-#ljLocationsPage .lj-region-modified{order:3;flex:none;display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);white-space:nowrap}
-#ljLocationsPage .lj-region-modified input{width:16px;height:16px;accent-color:var(--accent)}
+#ljLocationsPage .loc10-search{flex:1;min-width:200px;width:auto;margin-left:0;height:40px;gap:6px;padding:0 8px;border:1px solid var(--control-line);border-radius:6px;background:var(--panel)}
+#ljLocationsPage .loc10-pagehead>.lj-browse-add{flex:none;white-space:nowrap;margin-left:0;height:40px;min-height:40px}
 #ljLocationsPage .lj-loc-search-exit{flex:none;width:32px;min-height:32px;padding:0;font-size:22px;color:var(--muted)}
 #ljLocationsPage .loc10-columns{display:grid;grid-template-columns:190px minmax(0,1fr) 360px;min-height:0}
 #ljLocationsPage .loc10-admin,#ljLocationsPage .loc10-listpane{display:flex;flex-direction:column;min-height:0;overflow:hidden}
@@ -163,7 +162,7 @@
 #ljLocationsPage .loc10-tree b{font-size:14px;line-height:1.5;white-space:normal;overflow-wrap:anywhere}
 #ljLocationsPage .loc10-tree small{line-height:1.5;white-space:normal}
 #ljLocationsPage .loc10-colhead{flex:none;min-height:48px;height:auto;padding:11px 14px;align-items:center;white-space:normal;overflow:visible}
-#ljLocationsPage #loc10ListHead{display:block;min-height:78px}
+#ljLocationsPage #loc10ListHead{display:block}
 #ljLocationsPage .lj-region-listtitle{display:flex;align-items:center;gap:10px;min-width:0}
 #ljLocationsPage .lj-region-listtitle h2{flex:1;min-width:0;font-size:18px;line-height:1.4;white-space:normal;overflow-wrap:anywhere}
 #ljLocationsPage .lj-region-listtitle .loc10-count{font-size:12px;line-height:1.5;white-space:nowrap}
@@ -259,15 +258,11 @@
 .v7>div>p[style]{color:var(--muted)!important}
 
 #pkg10Window .loc10-body{display:flex;flex-direction:column;min-height:0}
-#pkg10Window .loc10-pagehead{flex:none;gap:14px;padding:0 16px}
+#pkg10Window .loc10-pagehead{flex:none;gap:8px;padding:0 16px}
 #pkg10Window .loc10-pagetitle{flex:none;min-width:0;gap:0}
+#pkg10Window .loc10-pagetitle>span,#pkg10Window .loc10-pagetitle>small{display:none}
 #pkg10Window .lj-modified-filter{display:inline-flex;align-items:center;flex:none;gap:6px;white-space:nowrap;font-size:13px}
-#pkg10Window .pkg10-searchfield{display:flex;align-items:center;flex:1;min-width:0;gap:8px;height:38px;padding:0 8px;color:var(--muted)}
-#pkg10Window .pkg10-searchfield:focus-within{box-shadow:inset 0 -1px var(--accent)}
-#pkg10Window .pkg10-searchfield>span{font-size:23px}
-#pkg10Window .pkg10-searchfield input{flex:1;min-width:0;width:0;height:36px;border:0;outline:0;background:transparent;color:var(--ink);font:inherit;font-size:14px}
-#pkg10Window .pkg10-searchfield input::-webkit-search-cancel-button{display:none}
-#pkg10Window .pkg10-searchfield button{flex:none;width:34px;height:34px;padding:0;font-size:23px;color:var(--muted)}
+#pkg10Window .pkg10-searchfield{flex:1;min-width:0}
 #pkg10Window [hidden]{display:none!important}
 #pkg10Window .pkg10-roots{flex:none}
 #pkg10Window .pkg10-workspace{display:grid;grid-template-columns:minmax(350px,1fr) minmax(480px,min(54%,660px));flex:1;min-height:0;overflow:hidden}
@@ -476,14 +471,14 @@
     </aside><div class="toast7" id="toast7" role="status"></div>
   </div></div>
   <div class="v7-notes"><div><b>顶栏只管大界面</b>地图、地点、资料、检查与窗口设置留在上方，不混入地图操作。</div><div><b>操作区按流程分工</b>普通地图沿用原工具位置。全图路线、方式与出发集中上沿；左下搜索与结果相接，右下保留地点操作，详情按需向上展开。</div><div><b>搜索直接设端点</b>地图搜索名称更新本页大标题；起点、终点和追加就地操作，图钉只定位。</div><div><b>追加与正文分开</b>小按钮「追加」只追加名称；双击地点大标题追加。正文先选定当前地点，再点「查看详情」。</div></div>
-  
+
   </div>
   <div id="ljLocationsPage" hidden>
     <div class="v7-intro"><h2>Living Japan｜横版地点页 · 三栏连续浏览</h2><p>行政结构、当前层级和地点详情同时可见；三栏使用同高单行栏头，正文从同一水平线开始。地点页负责离线地区关系与正文缺口，资料包开关仍由资料页负责。</p></div>
     <div class="v7-stage"><div class="work7 loc10-window" id="loc10Window">
       <header class="top7"><div class="brand7" title="Living Japan"><svg viewBox="0 0 24 24" aria-label="百合花"><path d="M12 20C9 15 9 8 12 3c3 5 3 12 0 17Z"/><path d="M11 20C6 18 3 14 4 8c5 1 8 5 7 12Z"/><path d="M13 20c5-2 8-6 7-12-5 1-8 5-7 12Z"/><path d="M12 20v2"/></svg></div><nav class="nav7"><button data-legacy-click="showLJShowcasePage('map')">地图</button><button class="on">地点</button><button>资料</button><button>检查</button></nav><div class="tools7"><button class="auto-scan7 on" aria-pressed="true" title="提示注入：不影响地图追加和出发" data-legacy-click="toggleLJAutoScan(this)"><span>提示注入</span><span class="scan-switch7" aria-hidden="true"></span></button><button class="icon7" title="切换横版／竖版"><svg><use href="#lj-orientation7"/></svg>横竖</button><button class="icon7 active" aria-pressed="true" title="锁定界面：点击外部时不关闭"><svg><use href="#lj-lock7"/></svg>锁定</button><button class="icon7" title="切换明暗配色" aria-label="切换明暗配色"><svg><use href="#lj-theme7"/></svg></button><button class="icon7" title="进入全地图"><svg><use href="#lj-expand7"/></svg>全地图</button><button class="icon7" title="设置" aria-label="设置"><svg><use href="#lj-settings7"/></svg></button><button class="icon7" title="关闭" aria-label="关闭"><svg><use href="#lj-close7"/></svg></button></div></header>
       <main class="loc10-body">
-        <div class="loc10-pagehead"><div class="loc10-pagetitle"><strong>地点</strong><span>离线地区结构＋资料缺口</span><small>行政路径、当前层级和地点详情同时可见</small></div><label class="lj-modified-filter"><input id="loc10ModifiedOnly" type="checkbox" data-legacy-change="renderLJLocationList(document.getElementById('loc10Search').value)">只看更改</label><label class="loc10-search"><svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></svg><input id="loc10Search" type="search" placeholder="搜索名称、类型、行政区或正文关键词" aria-label="搜索地点" data-legacy-input="renderLJLocationList(this.value)"></label></div>
+        <div class="loc10-pagehead"><div class="loc10-pagetitle"><strong>地点</strong><span>离线地区结构＋资料缺口</span><small>行政路径、当前层级和地点详情同时可见</small></div><label class="loc10-search"><svg viewBox="0 0 24 24"><circle cx="10" cy="10" r="6"/><path d="m15 15 5 5"/></svg><input id="loc10Search" type="search" placeholder="搜索名称、别名、类型" aria-label="搜索地点" data-legacy-input="renderLJLocationList(this.value)"></label><label class="lj-modified-filter"><input id="loc10ModifiedOnly" type="checkbox" data-legacy-change="renderLJLocationList(document.getElementById('loc10Search').value)">只看更改</label><button type="button" class="lj-button lj-browse-add" data-action="browse-add" title="新增地点" aria-label="新增地点">＋新增</button></div>
         <div class="loc10-columns">
           <aside class="loc10-admin"><div class="loc10-colhead" id="loc10AdminHead"><h3>行政结构</h3><small>都县 → 市区 → 行政区</small></div><div class="loc10-tree"><button><span class="caret">⌄</span><span class="tree-copy"><b>全国</b><small>4 个都县</small></span></button><button class="level1" data-legacy-click="notifyLJLocation('草图固定展示埼玉县中央区')"><span class="caret">›</span><span class="tree-copy"><b>东京都</b><small>51 个已核市／区</small></span><span class="tree-count">843</span></button><button class="level1" data-legacy-click="notifyLJLocation('草图固定展示埼玉县中央区')"><span class="caret">⌄</span><span class="tree-copy"><b>埼玉县</b><small>35 个已核市／区</small></span><span class="tree-count">174</span></button><button class="level2" data-legacy-click="notifyLJLocation('草图固定展示埼玉县中央区')"><span class="caret">⌄</span><span class="tree-copy"><b>埼玉市</b><small>10 个下级行政区</small></span><span class="tree-count">56</span></button><button class="level3" data-legacy-click="notifyLJLocation('草图固定展示埼玉县中央区')"><span class="caret">›</span><span class="tree-copy"><b>大宫区</b><small>10 个站点／地点</small></span></button><button class="level3 selected"><span class="caret"></span><span class="tree-copy"><b>中央区</b><small>3 个正文缺口</small></span><span class="tree-count">6</span></button><button class="level3" data-legacy-click="notifyLJLocation('草图固定展示埼玉县中央区')"><span class="caret">›</span><span class="tree-copy"><b>浦和区</b><small>查看直属地点</small></span></button><button class="level1" data-legacy-click="notifyLJLocation('草图固定展示埼玉县中央区')"><span class="caret">›</span><span class="tree-copy"><b>千叶县</b><small>按真实行政路径展开</small></span></button><button class="level1" data-legacy-click="notifyLJLocation('草图固定展示埼玉县中央区')"><span class="caret">›</span><span class="tree-copy"><b>神奈川县</b><small>按真实行政路径展开</small></span></button></div></aside>
           <section class="loc10-listpane"><div class="loc10-colhead" id="loc10ListHead"><h2>中央区</h2><small title="埼玉县 › 埼玉市 › 中央区">埼玉县 › 埼玉市</small><span class="loc10-count">6 地点 · 3 缺口</span></div><ul class="loc10-list" id="loc10List"></ul></section>
@@ -500,7 +495,7 @@
       </div>
       <div class="toast7 loc10-toast" id="loc10Toast" role="status"></div>
     </div></div>
-    
+
   </div>
   <div id="ljPackagesPage" hidden>
     <div class="v7-intro"><h2>Living Japan｜横版资料页 · 浏览与读写</h2><p>左侧逐层管理资料，右侧固定读写。返回目标就近显示，上级控制按需展开。</p></div>
@@ -522,7 +517,7 @@
       </div>
       <div class="toast7 pkg10-toast" id="pkg10Toast" role="status"></div>
     </div></div>
-    
+
   </div>
   <div id="ljDiagnosticsPage" hidden>
     <div class="v7-intro"><h2>Living Japan｜横版检查页 · 单页诊断工作台</h2><p>实际注入与当前预览保持独立；资料结果、提示词、读取通道和原始 JSON 分区查看，完整诊断结果可直接复制。</p></div>
@@ -548,7 +543,7 @@
       <header class="top7"><div class="brand7" title="Living Japan"><svg viewBox="0 0 24 24" aria-label="百合花"><path d="M12 20C9 15 9 8 12 3c3 5 3 12 0 17Z"/><path d="M11 20C6 18 3 14 4 8c5 1 8 5 7 12Z"/><path d="M13 20c5-2 8-6 7-12-5 1-8 5-7 12Z"/><path d="M12 20v2"/></svg></div><nav class="nav7"><button data-legacy-click="showLJShowcasePage('map')">地图</button><button data-legacy-click="showLJShowcasePage('locations')">地点</button><button data-legacy-click="showLJShowcasePage('packages')">资料</button><button data-legacy-click="showLJShowcasePage('check')">检查</button></nav><div class="tools7"><button class="auto-scan7 on" aria-pressed="true" title="提示注入" data-legacy-click="toggleLJAutoScan(this)"><span>提示注入</span><span class="scan-switch7" aria-hidden="true"></span></button><button class="icon7" title="切换横版／竖版"><svg><use href="#lj-orientation7"/></svg>横竖</button><button class="icon7 active" aria-pressed="true" title="锁定界面"><svg><use href="#lj-lock7"/></svg>锁定</button><button class="icon7" title="切换明暗配色" aria-label="切换明暗配色"><svg><use href="#lj-theme7"/></svg></button><button class="icon7" title="进入全地图"><svg><use href="#lj-expand7"/></svg>全地图</button><button class="icon7 active" title="设置" aria-label="设置"><svg><use href="#lj-settings7"/></svg></button><button class="icon7" title="关闭" aria-label="关闭"><svg><use href="#lj-close7"/></svg></button></div></header>
       <main class="loc10-body set12-body">
         <div class="set12-head"><div class="set12-title"><strong>设置</strong><span>按保存方式分组</span></div><span class="set12-headnote" id="set12Headnote">更改立即生效，不必另找保存按钮</span></div>
-        <nav class="set12-tabs" id="set12Tabs" aria-label="设置分类"><button data-settings-tab="common" data-legacy-click="setLJSettingsTab('common')">常用设置</button><button data-settings-tab="reading" data-legacy-click="setLJSettingsTab('reading')">读取设置</button><button data-settings-tab="favorites" data-legacy-click="setLJSettingsTab('favorites')">常用地点</button><button data-settings-tab="backup" data-legacy-click="setLJSettingsTab('backup')">备份与说明</button></nav>
+        <nav class="set12-tabs" id="set12Tabs" aria-label="设置分类"><button data-settings-tab="common" data-legacy-click="setLJSettingsTab('common')">常用设置</button><button data-settings-tab="reading" data-legacy-click="setLJSettingsTab('reading')">读取设置</button><button data-settings-tab="favorites" data-legacy-click="setLJSettingsTab('favorites')">地点设置</button><button data-settings-tab="backup" data-legacy-click="setLJSettingsTab('backup')">备份与说明</button></nav>
         <section class="set12-content" id="set12Content"></section>
       </main>
       <div class="toast7 set12-toast" id="set12Toast" role="status"></div>

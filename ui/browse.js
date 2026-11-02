@@ -3,6 +3,8 @@ import { createBrowseHistory } from '../src/browse-history.js';
 import { createPlaceSummary } from './place-summary.js';
 import { chooseRelatedIntroductions } from '../src/related-place-selection.js';
 import { navigationCoordinates } from '../src/living-area-map.js';
+import { favoritePlaceId, isFavoritePlace, normalizeFavoritePlaceIds } from '../src/place-favorites.js';
+import { isHiddenPlace } from '../src/place-hidden.js';
 
 // Rows, paths and location share direct containment and real entity IDs.
 export function mountBrowser(ui) {
@@ -38,6 +40,30 @@ export function mountBrowser(ui) {
   scroll?.addEventListener('scroll',remember,{passive:true});
   const draftEntityIds=()=>modified?.checked?[...new Set([...ui.engine.data.packages.filter(p=>modifiedPackages.has(p.id)).map(p=>p.placeId).filter(Boolean),...(catalog.personalIds?.()||[])])]:undefined;
   const admin=e=>e?.type==='行政区'||e?.browseOnly;
+  const favoriteIds=()=>normalizeFavoritePlaceIds(ui.bridge.store.read().livingJapanSettings?.favoritePlaceIds);
+  function favoriteButton(entity,compact=false){
+    if(!entity?.id||entity.id===top)return'';
+    const marked=isFavoritePlace(entity,favoriteIds(),ui.engine.data),label=`${marked?'取消收藏':'收藏'}${entity.name||entity.label||''}`;
+    return `<button type="button" class="lj-button lj-place-favorite${compact?' compact':''}${marked?' is-favorite':''}" data-action="browse-favorite" data-id="${esc(entity.id)}" aria-pressed="${marked}" aria-label="${esc(label)}" title="在同级展开宏内优先显示"><span aria-hidden="true">${marked?'★':'☆'}</span>${compact?'':marked?'已收藏':'收藏'}</button>`;
+  }
+  function hiddenButton(entity,compact=false){
+    if(!entity?.id||entity.id===top||entity.browseOnly)return'';
+    const hidden=isHiddenPlace(entity,ui.bridge.store.read().livingJapanSettings?.hiddenPlaceIds,ui.engine.data);
+    return `<button type="button" class="lj-button lj-place-hidden${hidden?' is-hidden':''}" data-action="browse-hidden" data-id="${esc(entity.id)}" aria-pressed="${hidden}" title="${hidden?'恢复地图点位与宏自身信息':'隐藏地图点位与宏自身信息'}">${hidden?'已隐藏':'隐藏'}</button>`;
+  }
+  async function toggleFavorite(entity){
+    if(!entity?.id||entity.id===top)return;
+    await ui.bridge.store.update(draft=>{
+      draft.livingJapanSettings||={};
+      const ids=normalizeFavoritePlaceIds(draft.livingJapanSettings.favoritePlaceIds);
+      draft.livingJapanSettings.favoritePlaceIds=isFavoritePlace(entity,ids,ui.engine.data)
+        ?ids.filter(id=>!isFavoritePlace(entity,[id],ui.engine.data)):[...ids,favoritePlaceId(entity,ui.engine.data)];
+    });
+    await ui.bridge.session.refresh?.();
+    treeOffsets.clear();
+    if(!query){offset=0;restoreScroll=0;}
+    await render({cachedSearch:true});
+  }
   function hasDraft(e){return ui.reader.packageIds(e).some(id=>modifiedPackages.has(id));}
   function searchLocation(entity){
     const declared=new Map((entity.adminNodes||[]).map(node=>[node.id,node])),seen=new Set();
@@ -55,7 +81,7 @@ export function mountBrowser(ui) {
     const subject=query?e.entity||e:e,preview=!isAdmin?summarize(subject):null;
     const note=meta+(isAdmin?'':` · ${hasDraft(e)?'有修改稿':(e.packageIds||[]).length?'已有正文空位':'可补写'}${e.coordinates?'':' · 坐标未收录'}`);
     const text=query?[subject.displayType||subject.type||meta,searchLocation(subject),summarize(subject,{selected:true}).text].filter(Boolean).join(' · '):preview?preview.text:note;
-    return `<li class="lj-row ${e.id===selectedId?'selected':''}" data-entity-row="${esc(e.id)}"><button class="lj-namebutton" ${action}="${esc(e.id)}" title="${esc(query?text:note)}"><span class="lj-name">${esc(e.name||e.label)}</span><span class="lj-meta${preview?' lj-place-summary':''}">${esc(text)}</span></button>${e.hasChildren?`<button class="lj-enter" data-enter="${esc(e.id)}">下级 ›</button>`:''}${e.browseOnly?'':button('查看','browse-read',`data-id="${esc(e.id)}"`)}</li>`;
+    return `<li class="lj-row ${e.id===selectedId?'selected':''}" data-entity-row="${esc(e.id)}"><button class="lj-namebutton" ${action}="${esc(e.id)}" title="${esc(query?text:note)}"><span class="lj-name">${esc(e.name||e.label)}</span><span class="lj-meta${preview?' lj-place-summary':''}">${esc(text)}</span></button>${favoriteButton(subject,true)}${hiddenButton(subject,true)}${e.hasChildren?`<button class="lj-enter" data-enter="${esc(e.id)}">下级 ›</button>`:''}${e.browseOnly?'':button('查看','browse-read',`data-id="${esc(e.id)}"`)}</li>`;
   }
   const pathAttribute=ids=>`data-path="${esc(JSON.stringify(ids))}"`;
   async function renderTree(ticket=request,listPage=null){
@@ -65,7 +91,7 @@ export function mountBrowser(ui) {
     const walk=async(parentId,parentPath,depth)=>{
       if(!valid())return'';
       const key=JSON.stringify(parentPath),pageOffset=treeOffsets.get(key)||0;
-      const page=listPage?.parentId===parentId&&listPage.pathKey===key&&listPage.page.offset===pageOffset?listPage.page:await catalog.browsePage(parentId,{offset:pageOffset,limit:48,entityIds,pathIds:parentPath});
+      const page=listPage?.parentId===parentId&&listPage.pathKey===key&&listPage.page.offset===pageOffset?listPage.page:await catalog.browsePage(parentId,{offset:pageOffset,limit:48,entityIds,pathIds:parentPath,favoriteIds:favoriteIds()});
       if(!valid())return'';
       let html='';
       for(const e of page.items){
@@ -79,10 +105,24 @@ export function mountBrowser(ui) {
     const html=await walk(top,[],0);if(valid()){tree.innerHTML=html;remember();}
   }
   function pathMarkup(path){return path.map((n,i)=>`<button class="lj-button" data-enter="${esc(n.id)}" ${pathAttribute(path.slice(0,i+1).map(e=>e.id))}>${esc(n.name||n.label||n.nameJa)}</button>`).join('<span>›</span>');}
+  // LJ-VERTICAL-PATH-20261102: compact navigation retains full identities while detail links retain full names.
+  function crumbStep(name,attributes,current=false){
+    const chars=Array.from(String(name||'')),short=chars.slice(0,3).join('');
+    return `<button type="button" class="lj-button lj-crumb-step${current?' is-current':''}" ${attributes} title="${esc(name)}" aria-label="${esc(name)}"${current?' aria-current="location"':''}><span class="lj-crumb-label">${esc(short)}</span>${chars.length>3?'<span class="lj-crumb-more" aria-hidden="true">…</span>':''}</button>`;
+  }
+  function detailPathMarkup(path){return path.map((n,i)=>`<button type="button" class="lj-detail-ancestor" data-enter="${esc(n.id)}" ${pathAttribute(path.slice(0,i+1).map(e=>e.id))} title="${esc(n.name||n.label||n.nameJa)}">${esc(n.name||n.label||n.nameJa)}</button>`).join('<span aria-hidden="true">›</span>');}
+  function alignNarrowCrumbs(){if(!desktop)for(const node of $$('#regionCrumb,#regionDrawerCrumb'))node.scrollLeft=node.scrollWidth;}
   async function crumbs(ticket,resolvedPath=null){
     const path=resolvedPath||await catalog.navigationPath(current,{pathIds});if(ticket!==request)return;
-    const html=[...(history.hasReturn()?[button('返回搜索结果','browse-search-back')]:[]),`<button class="lj-button" data-enter="${esc(top)}">地区</button>`,pathMarkup(path)].filter(Boolean).join('<span>›</span>');
-    if(desktop){$('#loc10AdminHead').innerHTML='<b>地区目录</b>';$('#loc10ListHead').innerHTML=`<div class="lj-inline">${html}</div>`;}else{for(const node of $$('#regionCrumb,#regionDrawerCrumb'))node.innerHTML=html;}
+    if(desktop){
+      const html=[...(history.hasReturn()?[button('返回搜索结果','browse-search-back')]:[]),`<button class="lj-button" data-enter="${esc(top)}">地区</button>`,pathMarkup(path)].filter(Boolean).join('<span>›</span>');
+      $('#loc10AdminHead').innerHTML='<b>地区目录</b>';$('#loc10ListHead').innerHTML=`<div class="lj-inline">${html}</div>`;
+    }else{
+      const html=[...(history.hasReturn()?[crumbStep('返回搜索结果','data-action="browse-search-back"')]:[]),crumbStep('地区',`data-enter="${esc(top)}" ${pathAttribute([])}`,current===top),
+        ...path.map((n,i)=>crumbStep(n.name||n.label||n.nameJa,`data-enter="${esc(n.id)}" ${pathAttribute(path.slice(0,i+1).map(e=>e.id))}`,n.id===current))].join('<span aria-hidden="true">›</span>');
+      for(const node of $$('#regionCrumb,#regionDrawerCrumb'))node.innerHTML=html;
+      alignNarrowCrumbs();
+    }
   }
   // LJ-Q07: complete text-search pages share the scan cache while browsing keeps its own origin and scroll.
   const searchRegion=()=>catalog.regions?.().find(region=>region.code===ui.state.regionCode);
@@ -134,7 +174,7 @@ export function mountBrowser(ui) {
         if(ticket===request)await renderTree(ticket);
       }else{
         catalog.cancelSearch?.('browse-search');
-        const page=await catalog.browsePage(current,{offset,limit:48,entityIds,pathIds});
+        const page=await catalog.browsePage(current,{offset,limit:48,entityIds,pathIds,favoriteIds:favoriteIds()});
         await showRows(page.items,ticket,null,page);
       }
     }catch(error){showError(error,ticket);}
@@ -156,14 +196,16 @@ export function mountBrowser(ui) {
   // LJ-MATERIAL-PLACE-20261030: the existing detail bridges verified point tags and their material entries.
   function propertyMarkup(e){if(!ui.engine.data.materialLibrary)return'';const info=ui.materialEditor.placeInfo(e);return `<p class="lj-meta">适用地域：${esc(info.climateName)}</p><p class="lj-meta">已挂词条：${info.bindings.length?info.bindings.map(binding=>esc(binding.name)+(binding.enabled===false?'（暂停）':'')).join('；'):'暂无'}</p>`;}
   function detail(e,path){
-    const childButton=e.hasChildren?`<button class="lj-button" data-enter="${esc(e.id)}" ${pathAttribute(path.map(n=>n.id))}>查看下级地点 ›</button>`:'';
-    const ancestors=path.filter(n=>n.id!==e.id),location=ancestors.length?`<div class="lj-inline lj-meta">${pathMarkup(ancestors)}</div>`:'';
-    if(e.browseOnly)return `<article class="lj-detail" data-browse-detail><h3>${esc(e.name||e.label)}</h3>${location}<p>${e.kind==='browse-unassigned'?'来源尚不能确认行政归属，点位和正文按原身份保留。':'按实际地点的包含关系浏览。'}</p>${childButton}</article>`;
+    // LJ-DETAIL-ORDER-20261102: one desktop heading, a shared action group and related links last.
+    const childButton=favoriteButton(e)+hiddenButton(e)+(!e.browseOnly?button('编辑地点资料','browse-edit',`data-id="${esc(e.id)}"`):'')+(e.hasChildren?`<button class="lj-button" data-enter="${esc(e.id)}" ${pathAttribute(path.map(n=>n.id))}>查看下级地点 ›</button>`:'');
+    const ancestors=path.filter(n=>n.id!==e.id),location=ancestors.length?`<nav class="lj-detail-path" aria-label="地点上级路径">${detailPathMarkup(ancestors)}</nav>`:'';
+    const heading=desktop?'':`<h3>${esc(e.name||e.label)}</h3>`;
+    if(e.browseOnly)return `<article class="lj-detail" data-browse-detail>${heading}${location}<p>${e.kind==='browse-unassigned'?'来源尚不能确认行政归属，点位和正文按原身份保留。':'按实际地点的包含关系浏览。'}</p><div class="lj-inline lj-detail-actions">${childButton}</div></article>`;
     const ids=ui.reader.packageIds(e),canMap=navigationCoordinates(e)||catalog.district?.(e.id)||e.type==='行政区';
-    return `<article class="lj-detail" data-browse-detail><h3>${esc(e.name||e.label)}</h3>${location}<p class="lj-place-summary">${esc(summarize(e).text)}</p><div class="lj-status">${e.type==='行政区'?'可按真实行政边界定位':e.coordinates?'已收录地图坐标':navigationCoordinates(e)?'可定位到此片区附近':'坐标尚未收录，仍可阅读和保存正文。'}</div>${propertyMarkup(e)}<section data-browse-related></section><div class="lj-body-list">${ids.map(id=>{const p=ui.engine.data.packages.find(x=>x.id===id);return button(p?.displayName||e.name,'browse-body',`data-package="${esc(id)}" data-id="${esc(e.id)}"`);}).join('')}</div><div class="lj-inline">${childButton}${button('地图定位','browse-map',`data-id="${esc(e.id)}" ${canMap?'':'disabled'}`)}${button(ids.length?'阅读／编辑':'查看正文','browse-read',`data-id="${esc(e.id)}"`)}${ui.engine.data.materialLibrary?button('词条属性','browse-properties',`data-id="${esc(e.id)}"`):''}${button('新增正文空位','browse-new',`data-id="${esc(e.id)}"`)}${button('追加名称','browse-append',`data-id="${esc(e.id)}"`)}</div></article>`;
+    return `<article class="lj-detail" data-browse-detail>${heading}${location}<p class="lj-place-summary">${esc(summarize(e).text)}</p><div class="lj-status">${e.type==='行政区'?'可按真实行政边界定位':e.coordinates?'已收录地图坐标':navigationCoordinates(e)?'可定位到此片区附近':'坐标尚未收录，仍可阅读和保存正文。'}</div>${propertyMarkup(e)}<div class="lj-body-list">${ids.map(id=>{const p=ui.engine.data.packages.find(x=>x.id===id);return button(p?.displayName||e.name,'browse-body',`data-package="${esc(id)}" data-id="${esc(e.id)}"`);}).join('')}</div><div class="lj-inline lj-detail-actions">${childButton}${button('地图定位','browse-map',`data-id="${esc(e.id)}" ${canMap?'':'disabled'}`)}${button(ids.length?'阅读／编辑':'查看正文','browse-read',`data-id="${esc(e.id)}"`)}${ui.engine.data.materialLibrary?button('词条属性','browse-properties',`data-id="${esc(e.id)}"`):''}${button('新增正文空位','browse-new',`data-id="${esc(e.id)}"`)}${button('追加名称','browse-append',`data-id="${esc(e.id)}"`)}</div><section data-browse-related></section></article>`;
   }
   async function showSelectedDetail(ticket=request,context=pathIds){
-    const id=selectedId,e=known(id)||await resolveNode(id);if(!e)return;
+    const id=selectedId,e=await resolveNode(id)||known(id);if(!e)return;
     const path=await catalog.navigationPath(id,{pathIds:context});
     if(ticket!==request||id!==selectedId)return;
     if(desktop){$('#loc10DetailName').textContent=e.name||e.label;$('#loc10DetailKind').textContent=e.displayType||e.type||'地区';$('#loc10DetailBody').innerHTML=detail(e,path);}
@@ -211,7 +253,7 @@ export function mountBrowser(ui) {
     stopPending();
     const results=query?{...snapshot(),selectedId:id}:null;
     const entity=await resolveNode(id);if(!entity||ticket!==locateRequest)return;
-    const location=await catalog.browseLocation(entity,{pageSize:48,entityIds:draftEntityIds(),pathIds:context});
+    const location=await catalog.browseLocation(entity,{pageSize:48,entityIds:draftEntityIds(),pathIds:context,favoriteIds:favoriteIds()});
     if(ticket!==locateRequest||!locationFound(location))return;
     if(results)history.follow(results);
     if(await enter(location.parentId,location.offset,{closeReader:false,pathIds:location.pathIds}))await select(location.entryId,location.pathIds);
@@ -229,9 +271,13 @@ export function mountBrowser(ui) {
       else if(n.dataset.result||n.dataset.treeSelect)await followLocation(n.dataset.result||n.dataset.treeSelect,context);
       else if(n.dataset.browseRelatedId)await locate(await resolveNode(n.dataset.browseRelatedId));
       else if(n.dataset.select)await select(n.dataset.select,context);
-      else if(n.id==='openRegionDrawer'){$('#regionDrawer').hidden=false;await renderTree();}
+      else if(n.id==='openRegionDrawer'){$('#regionDrawer').hidden=false;await renderTree();alignNarrowCrumbs();}
       else if(n.id==='closeRegionDrawer')$('#regionDrawer').hidden=true;
       else if(n.dataset.action?.startsWith('browse-')){const action=n.dataset.action,e=n.dataset.id?await resolveNode(n.dataset.id):null;
+        if(action==='browse-add')await ui.placeEditor.open(null,{isNew:true,parentId:current===top?null:current});
+        if(action==='browse-edit')await ui.placeEditor.open(e);
+        if(action==='browse-hidden'){n.disabled=true;try{await ui.setPlaceHidden(e,!isHiddenPlace(e,ui.bridge.store.read().livingJapanSettings?.hiddenPlaceIds,ui.engine.data));}finally{n.disabled=false;}}
+        if(action==='browse-favorite'){n.disabled=true;try{await toggleFavorite(e);}finally{n.disabled=false;}}
         if(action==='browse-next'){offset+=48;restoreScroll=0;await render();}if(action==='browse-prev'){offset=Math.max(0,offset-48);restoreScroll=0;await render();}
         if(action==='browse-search-next'){offset+=48;restoreScroll=0;await render({cachedSearch:true});}if(action==='browse-search-prev'){offset=Math.max(0,offset-48);restoreScroll=0;await render({cachedSearch:true});}
         if(action==='browse-search-back'&&await ui.reader.close())await restore(history.back());
@@ -256,13 +302,15 @@ export function mountBrowser(ui) {
   },400);};
   search?.addEventListener('compositionstart',()=>{composing=true;stopPending();});
   search?.addEventListener('compositionend',()=>{composing=false;queryChanged();});
-  search?.addEventListener('input',event=>{if(!composing&&!event.isComposing)queryChanged();});search?.setAttribute('placeholder','搜索地点、地区、原名、别名或类型');
+  search?.addEventListener('input',event=>{if(!composing&&!event.isComposing)queryChanged();});
+  search?.setAttribute('placeholder','搜索名称、别名、类型');
+  search?.setAttribute('aria-label','搜索地点、地区、原名、别名或类型');
   modified?.addEventListener('change',()=>{offset=0;restoreScroll=0;treeOffsets.clear();render();});
   async function locate(entity){
     await initialize();const ticket=++locateRequest;
     if(!entity||!(await ui.reader.close())||ticket!==locateRequest)return;
     stopPending();
-    const location=await catalog.browseLocation(entity,{pageSize:48,pathIds});
+    const location=await catalog.browseLocation(entity,{pageSize:48,pathIds,favoriteIds:favoriteIds()});
     if(ticket!==locateRequest||!locationFound(location))return;
     if(modified)modified.checked=false;
     if(await enter(location.parentId,location.offset,{closeReader:false,pathIds:location.pathIds}))await select(location.entryId,location.pathIds);

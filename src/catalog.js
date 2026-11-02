@@ -16,6 +16,7 @@ import { createMapSearchSession } from './map-search-session.js';
 import { createTextSearchSession } from './text-search-session.js';
 import { createSearchResultItem } from './search-result.js';
 import { normalizeSearchText as normalize, matchesSearchFields } from './search-text.js';
+import { applyPlaceEdit, normalizePlaceEdits, placeEditRecord, placeEditIdentityIds, placeEditPackageId } from './place-edits.js';
 
 // LJ-NATIONAL-01: source identities, official administration and sparse text slots.
 export function mapPointId(point) {
@@ -575,6 +576,9 @@ function workerClient(index, baseUrl, stationNames, placeMetadata, packSnapshot,
 
 export function createCatalog({ baseData = {}, baseUrl, fetcher = globalThis.fetch, useWorker = true, packSnapshot } = {}) {
   const entities = new Map(), baselineIds = new Set(), regionViews = new Map(), loaded = new Map();
+  const builtinEntities = new Map();
+  let personalState = { placeEdits: normalizePlaceEdits() }, editSignature = '';
+  const projectPersonal = entity => applyPlaceEdit(entity, personalState);
   let regionSelections = new Map();
   const districts = new Map();
   const district = id => districts.get(displayRepresentativeId(typeof id === 'string' ? id : id?.id));
@@ -607,6 +611,13 @@ export function createCatalog({ baseData = {}, baseUrl, fetcher = globalThis.fet
     return [entity.adminNodeId, ...(entity.adminPath || []).slice().reverse()].find(id => admin?.nodes.has(id)) || unassignedId;
   }
   function setPersonalPlaces(container = {}) {
+    const nextEdits = normalizePlaceEdits(container.placeEdits), nextSignature = JSON.stringify(nextEdits);
+    if (nextSignature !== editSignature) {
+      personalState = { placeEdits: nextEdits }; editSignature = nextSignature; supplementVersion++;
+      for (const [id, row] of builtinEntities) entities.set(id, projectPersonal(row));
+      for (const [id, row] of Object.entries(nextEdits.created)) entities.set(id, projectPersonal({ id, kind: 'content_object', canonicalPlace: true, personalPlace: true, userCreated: true, packageIds: [placeEditPackageId(id)], ...row }));
+      for (const [id, row] of entities) if (row.userCreated && !Object.hasOwn(nextEdits.created, id)) entities.delete(id);
+    }
     const snapshots = new Map(), packages = new Map(), nextPlaces = new Map();
     for (const slot of Object.values(container.customSlots || {})) {
       if (!slot?.entityId || isRetiredLivingArea(slot.entityId)) continue;
@@ -658,6 +669,8 @@ export function createCatalog({ baseData = {}, baseUrl, fetcher = globalThis.fet
     if (node.id !== entity.id) parents.push(node);
     const group = groupByRegion.get(entity.regionCode);
     if (group && group.id !== entity.id) parents.push(group);
+    const container = entities.get(entity.parentId || entity.related?.find(edge => edge.kind === 'within')?.id);
+    if (container) parents.push(container);
     return parents.flatMap(supplementFields);
   }
   async function searchSupplements(query, { regionCode, entityIds, limit = Infinity, isCurrent = () => true } = {}) {
@@ -666,7 +679,13 @@ export function createCatalog({ baseData = {}, baseUrl, fetcher = globalThis.fet
     const baseline = [...entities.values(), ...navigation.values()].filter(e => ((baselineIds.has(e.id) && !index.canonicalPlaces) || e.kind === 'map-region' && e.id.startsWith('map-region:') || admin.nodes.has(e.id) || navigation.has(e.id)) && (!allowed || allowed.has(e.id)) && (!regionCode || regionCode === '00' || e.regionCode === regionKey(regionCode) || viewRegions?.includes(e.regionCode) || e.regionCodes?.some(code => (viewRegions || [regionKey(regionCode)]).includes(code))) && matchesSearchFields(supplementFields(e), query, supplementContextFields(e))).slice(0, limit);
     if (baseline.length < limit) baseline.push(...(await personalFallbacks({ query, regionCode, entityIds, isCurrent })).slice(0, limit - baseline.length));
     if (!isCurrent()) return [];
-    return baseline.map(entity => ({ id: entity.id, name: entity.name, type: entity.displayType || entity.type, regionCode: entity.regionCode,
+    for (const id of Object.keys({ ...personalState.placeEdits.overrides, ...personalState.placeEdits.created })) {
+      const entity = await resolveEntity(id);
+      if (!isCurrent()) return [];
+      if (!entity || allowed && !allowed.has(entity.id) || regionCode && regionCode !== '00' && !(viewRegions || [regionKey(regionCode)]).includes(entity.regionCode)) continue;
+      if (matchesSearchFields(supplementFields(entity), query, supplementContextFields(entity)) && !baseline.some(row => row.id === entity.id)) baseline.push(entity);
+    }
+    return baseline.slice(0, limit).map(entity => ({ id: entity.id, name: entity.name, type: entity.displayType || entity.type, regionCode: entity.regionCode,
       searchSource: navigation.has(entity.id) ? 'navigation' : admin.nodes.has(entity.id) ? 'administration' : entity.kind === 'map-region' ? 'district' : entity.personalPlace ? 'personal' : 'baseline', entity }));
   }
   const byPlace = new Map();
@@ -692,7 +711,10 @@ export function createCatalog({ baseData = {}, baseUrl, fetcher = globalThis.fet
     }
     const legacy = entity.type === '车站' && railLegacy.get(`n02_station_${entity.source?.group}`);
     if (legacy) entity = { ...entity, legacyPlaceId: legacy.id, packageIds: legacy.packageIds, adminPath: legacy.adminPath, adminNodes: legacy.adminNodes, bodyStatus: legacy.bodyStatus };
+    if (entity.personalEdited && builtinEntities.has(entity.id)) entity = builtinEntities.get(entity.id);
     entity = presentCatalogEntity(entity, baseData);
+    if (!entity.userCreated) builtinEntities.set(entity.id, entity);
+    entity = projectPersonal(entity);
     entities.set(entity.id, entity);
     if (entities.size > baselineIds.size + 6000) for (const [id] of entities) { if (!baselineIds.has(id) && !admin?.nodes.has(id)) { entities.delete(id); if (entities.size <= baselineIds.size + 4000) break; } }
     return entity;
@@ -719,6 +741,7 @@ export function createCatalog({ baseData = {}, baseUrl, fetcher = globalThis.fet
         legacyPlaceId: place.placeId, packageIds, regionCode: pref?.regionCode || null, bodyStatus: packageIds.some(id => (basePackages.get(id)?.hasBody || String(basePackages.get(id)?.body || '').trim())) ? 'builtin' : 'empty',
         containedBy: (baseData.locationRelations?.crossObject || []).filter(r => r.kind === 'parent_child' && r.sourceObjectId === place.sourceObjectId).map(r => `place:content_object:${r.targetObjectId}`) };
       const presented = presentCatalogEntity(e, baseData);
+      builtinEntities.set(e.id, presented);
       entities.set(e.id, presented); baselineIds.add(e.id);
       if (official) railLegacy.set(official.railStationId, presented);
     }
@@ -776,8 +799,8 @@ export function createCatalog({ baseData = {}, baseUrl, fetcher = globalThis.fet
     if (allowed?.size === 0) { if (requestScope) await run('cancelSearch', requestScope, requestVersion); return []; }
     const baseline = (await searchSupplements(q, { regionCode, entityIds, limit: max })).map(item => item.entity);
     if (baseline.length >= max || !index.regions?.length) { if (requestScope) await run('cancelSearch', requestScope, requestVersion); return baseline; }
-    const found = await run('search', q, { regionCode, limit: max - baseline.length, entityIds, requestScope, requestVersion });
-    return [...baseline, ...found.map(remember).filter(Boolean)];
+    const found = await run('search', q, { regionCode, limit: max - baseline.length, entityIds, requestScope, requestVersion, excludedIds: Object.keys(personalState.placeEdits.overrides) });
+    return [...new Map([...baseline, ...found.map(remember).filter(Boolean)].map(row => [row.id, row])).values()].slice(0, max);
   }
   async function startSearchSession(method, query, { regionCode = activeCode, requestScope, pageSize, entityIds, onUpdate, ...options }) {
     const requestVersion = nextSearchVersion(requestScope);
@@ -788,7 +811,7 @@ export function createCatalog({ baseData = {}, baseUrl, fetcher = globalThis.fet
     const supplemental = await searchSupplements(String(query || '').trim(), { regionCode, entityIds, isCurrent });
     if (!isCurrent()) return { cancelled: true, requestVersion };
     const supplementalSignature = JSON.stringify(supplemental.slice().sort((a, b) => a.id.localeCompare(b.id)));
-    return run(method, query, { ...options, regionCode, requestScope, requestVersion, pageSize, supplemental, supplementalSignature, entityIds });
+    return run(method, query, { ...options, regionCode, requestScope, requestVersion, pageSize, supplemental, supplementalSignature, entityIds, excludedIds: Object.keys(personalState.placeEdits.overrides) });
   }
   const startMapSearch = (query, { regionCode = activeCode, priorityBounds = null, requestScope = 'map-search', pageSize = 40, entityIds, onUpdate } = {}) =>
     startSearchSession('startMapSearch', query, { regionCode, priorityBounds, requestScope, pageSize, entityIds, onUpdate });
@@ -805,6 +828,7 @@ export function createCatalog({ baseData = {}, baseUrl, fetcher = globalThis.fet
     if (!id || isRetiredLivingArea(id) || isHiddenAggregateDisplayPoint(id)) return null;
     id = displayRepresentativeId(id);
     await loadIndex();
+    if (Object.hasOwn(personalState.placeEdits.created, id)) return entities.get(id) || projectPersonal({ id, ...personalState.placeEdits.created[id], canonicalPlace: true, userCreated: true });
     if (admin.nodes.has(id) || navigation.has(id) || districts.has(id) || id === unassignedId) return getEntity(id);
     if (index.canonicalPlaces) {
       const cached = entities.get(canonicalIds.get(id) || id);
@@ -844,6 +868,12 @@ export function createCatalog({ baseData = {}, baseUrl, fetcher = globalThis.fet
       nodes.push({ ...entity, adminNodeId: entity.adminPath?.at(-1), parents: (entity.containedBy || []).map(id => ({ id, regionCode: entity.regionCode })) });
     }
     for (const entity of personal) nodes.push({ ...entity, adminNodeId: personalParent(entity), parents: [] });
+    for (const id of Object.keys({ ...personalState.placeEdits.overrides, ...personalState.placeEdits.created })) {
+      const entity = await resolveEntity(id);
+      if (!entity) continue;
+      const parentId = entity.parentId ?? entity.related?.find(edge => edge.kind === 'within')?.id ?? entity.adminNodeId ?? entity.adminPath?.at(-1);
+      nodes.push({ ...entity, parents: parentId ? [{ id: parentId, regionCode: entity.regionCode }] : [] });
+    }
     if (index.canonicalPlaces && index.runtimeSource?.kind !== 'overture') for (const row of identityOverrides) {
       if (index.packageMode && !index.activeRegionCodes?.includes(row.regionCode)) continue;
       const entity = remember({ ...row, canonicalPlace: true, adminPath: [...(admin.nodes.get(row.adminNodeId)?.adminPath || []), row.adminNodeId].filter(Boolean) });
@@ -886,7 +916,7 @@ export function createCatalog({ baseData = {}, baseUrl, fetcher = globalThis.fet
     if (node.ref && (!entity || entity.personalPlace)) entity = remember(await run('geographicResolve', node.ref));
     if (!entity) entity = remember(node);
     if (!entity) return null;
-    const value = { ...entity, hasChildren: Boolean(node.hasChildren || node.childCount), childCount: node.childCount || 0 };
+    const value = { ...entity, parents: (node.parents || []).map(ref => ({ ...ref })), hasChildren: Boolean(node.hasChildren || node.childCount), childCount: node.childCount || 0 };
     entities.set(value.id, value);
     return value;
   }
@@ -952,7 +982,11 @@ export function createCatalog({ baseData = {}, baseUrl, fetcher = globalThis.fet
         const parent = await resolveEntity(ref.id);
         for (const edge of parent?.related || []) if (edge.kind === 'contains' && edge.id !== source.id) {
           const target = await resolveEntity(edge.id);
-          if (target) peers.set(target.id, { ...target, relationKind: 'same_parent' });
+          if (target && (!Object.hasOwn(placeEditRecord(target, personalState)?.fields || {}, 'parentId') || target.related?.some(edge => edge.kind === 'within' && edge.id === ref.id))) peers.set(target.id, { ...target, relationKind: 'same_parent' });
+        }
+        for (const id of Object.keys({ ...personalState.placeEdits.overrides, ...personalState.placeEdits.created })) {
+          const target = await resolveEntity(id);
+          if (target && target.id !== source.id && target.related?.some(edge => edge.kind === 'within' && edge.id === ref.id)) peers.set(target.id, { ...target, relationKind: 'same_parent' });
         }
       }
       if (!parents.length && source.adminNodeId) {
@@ -987,13 +1021,29 @@ export function createCatalog({ baseData = {}, baseUrl, fetcher = globalThis.fet
     startMapSearch, mapSearchPage: async (queryId, options) => presentSearchPage(await run('mapSearchPage', queryId, options)), mapSearchStats: () => run('mapSearchStats'),
     cancelSearch: scope => { searchListeners.delete(scope); return run('cancelSearch', scope, nextSearchVersion(scope)); }, children, browsePage, browseChildren, browseNode, browseParent, browseLocation, browseEntryId, normalizeBrowseState, adminChildren, navigationRoot, navigationChildren, navigationPath, district,
     availability: code => { const spec=[...(index?.views || []),...(index?.regions || [])].find(row=>row.code===String(code)); return {available:spec?.available !== false,packageId:spec?.packageId || index?.regionPackageIds?.[String(code)]}; },
-    get: getEntity, related, setPersonalPlaces, personalIds: () => [...personalPlaces.keys()],
-    resolve: resolveEntity, resolveLight: async id => remember(await run('canonicalResolveLight', id)),
-    resolveLights: async ids => (await run('canonicalResolveLights', ids)).map(remember).filter(Boolean),
-    activationCandidates: texts => run('activationCandidates', texts), landOverview: () => run('landOverview'), adminBoundary: id => run('adminBoundary', id),
+    get: getEntity, related, setPersonalPlaces, personalIds: () => [...new Set([...personalPlaces.keys(), ...Object.keys(personalState.placeEdits.created)])],
+    async resolveBuiltin(id) { await resolveEntity(id); return builtinEntities.get(canonicalIds.get(id) || id) || null; },
+    resolve: resolveEntity, resolveLight: async id => Object.hasOwn(personalState.placeEdits.created, id) ? resolveEntity(id) : remember(await run('canonicalResolveLight', id)),
+    resolveLights: async ids => (await Promise.all(ids.map(id => Object.hasOwn(personalState.placeEdits.created, id) ? resolveEntity(id) : run('canonicalResolveLight', id).then(remember)))).filter(Boolean),
+    async activationCandidates(texts) {
+      const candidates = await run('activationCandidates', texts), found = new Map();
+      const text = (texts || []).map(value => String(value || '').normalize('NFKC').toLocaleLowerCase());
+      const matches = row => (row.personalFullTriggers ?? [row.activationName || row.name, ...(row.fullNames || [])]).some(term => term && text.some(value => value.includes(String(term).normalize('NFKC').toLocaleLowerCase())));
+      for (const candidate of candidates) { const projected = projectPersonal(candidate); if (!Array.isArray(projected.personalFullTriggers) || matches(projected)) found.set(projected.id, projected); }
+      for (const id of Object.keys({ ...personalState.placeEdits.overrides, ...personalState.placeEdits.created })) { const row = await resolveEntity(id); if (row && matches(row)) found.set(row.id, row); }
+      return [...found.values()];
+    }, landOverview: () => run('landOverview'), adminBoundary: id => run('adminBoundary', id),
     regions: () => [...(index?.views || []), ...(index?.regions || [])].map(region => { const group = groupByRegion.get(region.code); return group ? { ...region, groupId: group.id, groupCode: group.code, groupName: group.name } : region; }),
     schematicEntity: (id, fallback) => presentCatalogEntity(getEntity(id) || entities.get(id) || fallback, baseData) || null,
-    async viewport(code, bounds, options = {}) { const requestVersion = options.requestScope ? nextViewportVersion(options.requestScope) : undefined; const result = await run('viewport', code, bounds, { ...options, requestVersion }); return { ...result, entities: result.entities.map(remember).filter(Boolean) }; },
+    async viewport(code, bounds, options = {}) {
+      const requestVersion = options.requestScope ? nextViewportVersion(options.requestScope) : undefined;
+      const result = await run('viewport', code, bounds, { ...options, requestVersion }), points = result.entities.map(remember).filter(entity => entity && isMapPointVisible(entity, options.pointVisibility));
+      for (const id of Object.keys({ ...personalState.placeEdits.overrides, ...personalState.placeEdits.created })) {
+        const entity = await resolveEntity(id), point = projectCoordinates(entity?.coordinates, index.projection);
+        if (point && (!bounds || point[0] >= bounds[0] && point[0] <= bounds[2] && point[1] >= bounds[1] && point[1] <= bounds[3]) && isMapPointVisible(entity, options.pointVisibility)) points.push({ ...entity, coordinates: { ...entity.coordinates, x: point[0], y: point[1] } });
+      }
+      return { ...result, entities: [...new Map(points.map(row => [row.id, row])).values()] };
+    },
     cancelViewport: scope => run('cancelViewport', scope, nextViewportVersion(scope)),
     projection: () => index?.projection || {},
     stats: () => ({ mode: remote ? 'worker' : 'inline', entities: entities.size, regions: [...regionViews.keys()] }),

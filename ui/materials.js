@@ -137,9 +137,16 @@ export function mountMaterials(ui) {
   const pageSize = desktop ? 48 : 24;
   if (!select('ljMaterialsStyle')) { const style = doc.createElement('link'); style.id = 'ljMaterialsStyle'; style.rel = 'stylesheet'; style.href = new URL('./materials.css', import.meta.url).href; doc.head.append(style); }
   const searchBar = doc.createElement('div'); searchBar.className = desktop ? 'pkg10-searchfield lj-material-search' : 'mv-search lj-material-search';
-  searchBar.innerHTML = '<span aria-hidden="true">⌕</span><input type="search" aria-label="搜索资料名称、别名或类型" placeholder="搜索名称、内置别名或类型"><button type="button" data-material-action="clear" aria-label="退出资料搜索">×</button>';
+  searchBar.innerHTML = '<span aria-hidden="true">⌕</span><input type="search" aria-label="搜索资料名称、别名或类型" placeholder="搜索名称、别名、类型"><button type="button" data-material-action="clear" aria-label="退出资料搜索">×</button>';
   const head = desktop ? root.querySelector('.loc10-pagehead') : roots;
-  if (desktop) head?.insertBefore(searchBar, head.lastElementChild); else head?.after(searchBar);
+  if (desktop) head?.insertBefore(searchBar, head.lastElementChild);
+  else {
+    // LJ-MATERIAL-SEARCHROW-20261102: move the original filter beside search without replacing its state or events.
+    const searchRow = doc.createElement('div'); searchRow.className = 'lj-material-searchrow';
+    searchRow.append(searchBar);
+    const filter = modified?.closest('label'); if (filter) searchRow.append(filter);
+    head?.after(searchRow);
+  }
   const input = searchBar.querySelector('input'); input.value = state.query;
   const toolbar = doc.createElement('div'); toolbar.className = 'lj-selectbar lj-material-tools';
   list.before(toolbar);
@@ -190,7 +197,7 @@ export function mountMaterials(ui) {
     currentSwitch.hidden = currentMode === 'search' && state.multi;
     const selected = state.selected.filter(id => materialBodySelection(allRows).some(node => node.id === id));
     const canAdd = ui.engine.data.materialLibrary && ['layer', 'material-region', 'material-category'].includes(current.kind);
-    toolbar.innerHTML = currentMode === 'search' ? `<span>全资料 · ${allRows.length} 项匹配</span>${button(state.multi ? '完成多选' : '多选', 'multi')}${state.multi ? `<span>已选 ${selected.length} 项</span>${button('全选匹配', 'all')}${button('取消勾选', 'none')}${button('开启所选', 'bulk-on', selected.length && !busy ? '' : 'disabled')}${button('关闭所选', 'bulk-off', selected.length && !busy ? '' : 'disabled')}` : ''}` : `<span>${currentMode === 'modified' ? '全部修改稿' : esc(current.name)} · ${allRows.length} 项</span>${state.source ? button('返回' + (state.source.mode === 'search' ? '搜索' : '修改稿'), 'source') : ''}${statusHTML(current, settings)}${canAdd && currentMode === 'normal' ? button('新增', 'add') : ''}`;
+    toolbar.innerHTML = currentMode === 'search' ? `<span>全资料 · ${allRows.length} 项匹配</span>${button(state.multi ? '完成多选' : '多选', 'multi')}${state.multi ? `<span>已选 ${selected.length} 项</span>${button('全选匹配', 'all')}${button('取消勾选', 'none')}${button('开启所选', 'bulk-on', selected.length && !busy ? '' : 'disabled')}${button('关闭所选', 'bulk-off', selected.length && !busy ? '' : 'disabled')}` : ''}` : `<span>${currentMode === 'modified' ? '全部修改稿' : esc(current.name)} · ${allRows.length} 项</span>${state.source ? button('返回' + (state.source.mode === 'search' ? '搜索' : '修改稿'), 'source') : ''}${statusHTML(current, settings)}${canAdd && currentMode === 'normal' ? `<button type="button" class="lj-button lj-material-add" data-material-action="add">＋新增</button>` : ''}`;
     list.innerHTML = page.rows.map(node => rowHTML(node, settings, saved)).join('') || '<div class="lj-empty">' + (currentMode === 'search' ? '没有匹配的名称、别名或类型。' : currentMode === 'modified' ? '尚未保存修改稿。' : '当前层暂无直接内容。') + '</div>';
     footer.innerHTML = `<span>${page.total ? page.offset + 1 : 0}–${Math.min(page.offset + pageSize, page.total)} / ${page.total}</span>${button('上一页', 'prev', page.hasPrevious ? '' : 'disabled')}${button('下一页', 'next', page.hasNext ? '' : 'disabled')}`;
     const count = select(desktop ? 'pkg10ListCount' : 'packageOffCount'); if (count) count.textContent = allRows.filter(node => !materialState(node, settings, model).own).length + ' 项本级关闭';

@@ -4,7 +4,7 @@ export const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'
 export const button = (text, action, extra = '') => `<button type="button" class="lj-button" data-action="${action}" ${extra}>${esc(text)}</button>`;
 export const switchButton = (on, label, action, extra = '') => `<button type="button" class="lj-switch" aria-pressed="${on}" aria-label="${esc(label)}" title="${esc(label)}" data-action="${action}" ${extra}></button>`;
 export function setText(selector, text) { $$(selector).forEach(node => { node.textContent = text; }); }
-export function ask({ title, message, choices, fields = [] }) {
+export function ask({ title, message, choices, fields = [], confirmDiscard = false }) {
   return new Promise(resolve => {
     const dialog=document.createElement('dialog');dialog.className='lj-dialog';
     // LJ-MATERIAL-DIALOG-20261030: existing dialogs retain values and accept readable condition fields.
@@ -15,9 +15,19 @@ export function ask({ title, message, choices, fields = [] }) {
       return `<label>${esc(field.label)}${control}</label>`;
     };
     dialog.innerHTML=`<h3>${esc(title)}</h3><p>${esc(message||'')}</p>${fields.map(fieldHTML).join('')}<div class="lj-dialog-actions">${choices.map(c=>`<button type="button" class="lj-button ${c.primary?'primary':''}" data-choice="${esc(c.id)}">${esc(c.label)}</button>`).join('')}</div>`;
-    const finish=id=>{const values={};for(const field of fields){const inputs=$$('[name]',dialog).filter(node=>node.name===field.id);values[field.id]=field.multiple?inputs.filter(node=>node.checked).map(node=>node.value):inputs[0]?.value||'';}dialog.close();dialog.remove();resolve(fields.length?{id,values}:id);};
-    dialog.addEventListener('click',event=>{const target=event.target.closest('[data-choice]');if(target)finish(target.dataset.choice);});
-    dialog.addEventListener('cancel',event=>{event.preventDefault();finish('cancel');});document.body.append(dialog);dialog.showModal();
+    const readValues=()=>{const values={};for(const field of fields){const inputs=$$('[name]',dialog).filter(node=>node.name===field.id);values[field.id]=field.multiple?inputs.filter(node=>node.checked).map(node=>node.value):inputs[0]?.value||'';}return values;};
+    const initialValues=JSON.stringify(readValues());let confirming=false,finished=false;
+    const finish=id=>{if(finished)return;finished=true;const values=readValues();dialog.close();dialog.remove();resolve(fields.length?{id,values}:id);};
+    // LJ-DIALOG-DISCARD-20261102: opted-in input dialogs retain the same live form while asking about changed input.
+    const cancel=async()=>{
+      if(confirming||finished)return;
+      if(!confirmDiscard||JSON.stringify(readValues())===initialValues){finish('cancel');return;}
+      confirming=true;
+      try{const answer=await ask({title:'放弃未保存的填写？',message:'已填写的内容尚未保存。可以继续编辑，或放弃本次填写。',choices:[{id:'cancel',label:'继续编辑',primary:true},{id:'discard',label:'放弃草稿'}]});if(answer==='discard')finish('cancel');}
+      finally{confirming=false;}
+    };
+    dialog.addEventListener('click',event=>{const target=event.target.closest('[data-choice]');if(!target||confirming||finished)return;if(target.dataset.choice==='cancel')void cancel();else finish(target.dataset.choice);});
+    dialog.addEventListener('cancel',event=>{event.preventDefault();void cancel();});document.body.append(dialog);dialog.showModal();
   });
 }
 export function status(message, type='') {

@@ -1,9 +1,10 @@
 // LJ-PLACE-METADATA-01: reviewed identity mappings share source summaries, one name and complete triggers.
-import { placeIdentityIds, personalPlaceRecord } from './place-identities.js';
+import { placeIdentityIds, personalPlaceRecord, canonicalPlaceContext } from './place-identities.js';
 import { presentStation, isRailStation } from './station-presentation.js';
 import { presentMetroPurpose } from './metro-purpose-presentation.js';
 import { applyMetroName } from './metro-names.js';
 import { chainPlaceTriggers, withoutChainBrands } from './chain-place-names.js';
+import { applyPlaceEdit, placeEditRecord } from './place-edits.js';
 const unique = values => [...new Set(values.filter(Boolean))];
 
 export function applyPlaceMetadata(data, metadata) {
@@ -36,7 +37,10 @@ export function applyPlaceMetadata(data, metadata) {
   };
 }
 
-export const packageDisplayName = (item, data) => data.placeMetadata?.packageNames?.[item?.id] || item?.displayName;
+export const packageDisplayName = (item, data) => {
+  const entity = canonicalPlaceContext(item?.placeId, data), locked = item?.placeKind === 'station' || entity?.builtinStationLocked;
+  return (!locked && placeEditRecord({ id: item?.canonicalPlaceId || item?.placeId }, data)?.fields.name) || data.placeMetadata?.packageNames?.[item?.id] || item?.displayName;
+};
 
 // LJ-EXPLICIT-DETAIL-LINKS-20261031: only reviewed package IDs attach; source and canonical identities stay separate.
 export function placeDetailPackageIds(entity, data = {}) {
@@ -47,6 +51,8 @@ export function placeDetailPackageIds(entity, data = {}) {
 // LJ-PLACE-INTRODUCTION-20261030: independent introductions never fall back to named-place detail bodies.
 export function placeIntroduction(entity, data = {}) {
   if (!entity) return '';
+  const edit = placeEditRecord(entity, data);
+  if (edit && Object.hasOwn(edit.fields, 'summary')) return edit.fields.summary;
   const ids = placeIdentityIds(entity, data), saved = personalPlaceRecord(entity, data, 'summary');
   if (saved) return typeof saved.summary === 'string' ? saved.summary : '';
   for (const id of ids) {
@@ -78,7 +84,7 @@ function presentCatalogEntityMetadata(entity, data) {
   };
 }
 
-export const presentCatalogEntity = (entity, data) => applyMetroName(presentCatalogEntityMetadata(entity, data));
+export const presentCatalogEntity = (entity, data) => applyPlaceEdit(applyMetroName(presentCatalogEntityMetadata(entity, data)), data);
 
 export function placeIdentityInfo(entity, item, data) {
   const ids = new Set(placeIdentityIds(entity, data));
@@ -96,6 +102,7 @@ export function placeIdentityInfo(entity, item, data) {
   const linkedPackages = new Set([...(entity.packageIds || []), ...placeDetailPackageIds(entity, data)]);
   const packages = item ? [item] : (data.packages || []).filter(value => ids.has(value.placeId) || linkedPackages.has(value.id));
   const source = entries.find(row => row.sourceName);
-  const fullTriggers = chainPlaceTriggers(entity, unique([...packages.flatMap(value => value.fullTriggers || []), ...(metropolitan ? [entity.activationName, ...(entity.fullNames || [])] : [])]));
+  const edit = placeEditRecord(entity, data);
+  const fullTriggers = Object.hasOwn(edit?.fields || {}, 'fullNames') && !(entity.builtinStationLocked ?? isRailStation(entity)) ? [...edit.fields.fullNames] : chainPlaceTriggers(entity, unique([...packages.flatMap(value => value.fullTriggers || []), ...(metropolitan ? [entity.activationName, ...(entity.fullNames || [])] : [])]));
   return { originalName, aliases: metropolitan ? unique([...aliases, ...fullTriggers]).filter(name => name !== entity.name) : aliases, sourceName: source?.sourceName || '', fullTriggers };
 }

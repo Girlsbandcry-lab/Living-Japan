@@ -1,10 +1,13 @@
 import { MAP_POINT_CATEGORIES, MAP_POINT_GROUPS, normalizeMapPointVisibility } from '../src/map-point-categories.js';
 import { METRO_POINT_CATEGORIES, METRO_POINT_GROUPS, normalizeMetroPointVisibility } from '../src/metro-point-categories.js';
 import { MATERIAL_LAYER_LABELS } from '../src/material-catalog.js';
+import { DEFAULT_PEER_PLACE_QUOTA, normalizePeerPlaceQuotas, PEER_PLACE_CATEGORIES, PEER_PLACE_GROUPS } from '../src/peer-place-selection.js';
+import { GUIDE_CHAPTERS } from './guide.js';
 
 const clone = value => JSON.parse(JSON.stringify(value));
 const CHANNELS = Object.entries(MATERIAL_LAYER_LABELS);
-const TABS = [['common', '常用设置'], ['reading', '读取设置'], ['favorites', '常用地点'], ['backup', '备份与说明']];
+const TABS = [['common', '常用设置'], ['reading', '读取设置'], ['favorites', '地点设置'], ['backup', '备份与说明']];
+const TAB_NOTES = { common: '常用设置即时保存', reading: '读取设置由本组统一保存', favorites: '分类即时保存；四个常用地点独立保存', backup: '个人备份与扩展更新分开' };
 const READING_KEYS = ['textScript', 'wrapperMode', 'historyDepth', 'currentUserBoundary', 'channelTags'];
 const splitTags = value => [...new Set(String(value).split(/[，,、;；\n]+/).map(item => item.trim()).filter(Boolean))];
 const updateBytes = value => Number.isFinite(value) ? value >= 1_000_000 ? `${(value / 1_000_000).toFixed(1)} MB` : value >= 1_000 ? `${(value / 1_000).toFixed(1)} kB` : `${value} B` : '待检查';
@@ -22,6 +25,9 @@ const MAP_POINT_SCOPES = [
 const metroParentIds = new Set(METRO_POINT_CATEGORIES.map(row => row.parentId).filter(Boolean));
 const mapPointCategories = MAP_POINT_SCOPES.flatMap(scope => scope.categories);
 const mapPointLabels = new Map(mapPointCategories.map(item => [item.id, item.label + (metroParentIds.has(item.id) ? '（未细分）' : '')]));
+const PEER_PLACE_SCOPES = [['IN', '场馆与店铺'], ['EX', '街区与户外'], ['legacy', '通用分类']].map(([id, label]) => ({ id, label,
+  categories: PEER_PLACE_CATEGORIES.filter(row => row.layer === id), groups: PEER_PLACE_GROUPS.filter(row => row.layer === id) }));
+const peerPlaceLabels = new Map(PEER_PLACE_CATEGORIES.map(item => [item.id, item.label + (metroParentIds.has(item.id) ? '（未细分）' : '')]));
 
 // LJ-SETTINGS-LIVE: approved layout-specific groups and controls share the real independent save scopes.
 export function mountSettings(ui) {
@@ -40,11 +46,17 @@ export function mountSettings(ui) {
   let packUpdates = packManager?.getUpdateSummary?.() || { available: false, items: [] }, updateLog = null, logFocus = null;
   const favoriteMatches = new Map();
   const favoriteQueries = new Map();
+  const quotaDrafts = new Map(), quotaErrors = new Set();
+  let quotaSaveQueue = Promise.resolve();
   const scrolls = {};
-  const mapPointView = { scope: 'IN', groups: Object.fromEntries(MAP_POINT_SCOPES.map(scope => [scope.id, scope.groups[0].id])), query: '', scrolls: {} };
+  // LJ-PLACE-SETTINGS-20261102: shared category browser, independent quota drafts and real tabs in all layouts.
+  const savedCategoryView = store.read().extensionUi?.placeCategoryView || {};
+  const mapPointView = { mode: savedCategoryView.mode === 'introductions' ? 'introductions' : 'map',
+    scope: MAP_POINT_SCOPES.some(scope => scope.id === savedCategoryView.scope) ? savedCategoryView.scope : 'IN',
+    groups: Object.fromEntries(MAP_POINT_SCOPES.map(scope => [scope.id, scope.groups.some(group => group.id === savedCategoryView.groups?.[scope.id]) ? savedCategoryView.groups[scope.id] : scope.groups[0].id])), query: '', scrolls: {} };
   const settings = () => ui.engine.normalizeSettings(store.read().livingJapanSettings);
   const scroller = () => desktop ? content.querySelector('.set12-scroll') || content : content;
-  const rememberScroll = () => { scrolls[desktop ? tab : 'all'] = scroller().scrollTop || 0; };
+  const rememberScroll = () => { scrolls[tab] = scroller().scrollTop || 0; };
   content.addEventListener('scroll', rememberScroll, { capture: true, passive: true });
   const group = (title, note, body, id = '') => desktop
     ? `<section class="set12-group"${id ? ` id="${id}"` : ''}><div class="set12-grouphead"><h3>${esc(title)}</h3><span class="set12-savekind">${esc(note || '')}</span></div>${body}</section>`
@@ -92,35 +104,45 @@ export function mountSettings(ui) {
       row('同级其他大生活带介绍', toggle('expandPeerLivingAreas', value.expandPeerLivingAreas, '展开同级其他大生活带介绍'), '开启后附带其他同级大片区的一句话介绍；没有介绍时显示名称。', true) +
       row('详细诊断', toggle('diagnostics', value.diagnostics, '详细诊断'), '', true);
     const channelRows = CHANNELS.map(([key, name]) => row(desktop ? name : `资料通道 · ${name}`, toggle(`layer:${key}`, value.layers[key], name), '', true)).join('');
-    if (desktop) return group('界面与布局', '修改后即时保存', interfaceRows) + group('资料通道', '暂停通道保留各项选择', channelRows) + group('地图兴趣点', '修改后即时保存', mapPointsHtml(saved.extensionUi?.mapPointVisibility));
-    return group('常用设置', '即时保存', interfaceRows + channelRows + `<div class="set-row lj-map-point-section"><div class="set-label"><b>地图兴趣点</b></div>${mapPointsHtml(saved.extensionUi?.mapPointVisibility)}</div>`, 'settings-common');
+    if (desktop) return group('界面与布局', '修改后即时保存', interfaceRows) + group('资料通道', '暂停通道保留各项选择', channelRows);
+    return group('常用设置', '即时保存', interfaceRows + channelRows, 'settings-common');
   }
   const mapPointVisibility = value => ({ ...normalizeMapPointVisibility(value), ...normalizeMetroPointVisibility(value) });
-  const activeMapScope = () => MAP_POINT_SCOPES.find(scope => scope.id === mapPointView.scope);
-  const activeMapGroup = () => activeMapScope().groups.find(item => item.id === mapPointView.groups[mapPointView.scope]);
+  const categoryScopes = () => mapPointView.mode === 'introductions' ? PEER_PLACE_SCOPES : MAP_POINT_SCOPES;
+  const activeMapScope = () => categoryScopes().find(scope => scope.id === mapPointView.scope);
+  const activeMapGroup = () => activeMapScope().groups.find(item => item.id === mapPointView.groups[mapPointView.scope]) || activeMapScope().groups[0];
+  const peerQuotas = () => normalizePeerPlaceQuotas(settings().peerPlaceQuotas);
+  const persistCategoryView = () => store.update(draft => {
+    draft.extensionUi ||= {};
+    draft.extensionUi.placeCategoryView = { mode: mapPointView.mode, scope: mapPointView.scope, groups: { ...mapPointView.groups } };
+  });
   const mapPointButton = (text, attrs) => `<button type="button" class="${desktop ? 'set12-button' : 'btn'}" ${attrs}>${text}</button>`;
   const mapPointCount = visibility => {
     const shown = mapPointCategories.filter(item => visibility[item.id]).length;
     return shown === mapPointCategories.length ? '全部类别已显示' : `已显示 ${shown} / ${mapPointCategories.length} 类`;
   };
   function mapPointsHtml(value) {
-    const visibility = mapPointVisibility(value);
-    return `<div class="lj-map-point-settings" data-map-point-settings><div class="lj-map-point-global"><span>适用于全部地区</span><div class="lj-map-point-actions">${mapPointButton('全部显示', 'data-map-point-all="show"')}${mapPointButton('全部隐藏', 'data-map-point-all="hide"')}</div></div>` +
-      `<div class="lj-map-point-search"><label for="lj-map-point-search">查找分类</label><input id="lj-map-point-search" type="search" data-map-point-search value="${esc(mapPointView.query)}" placeholder="输入名称，查找所有分类" autocomplete="off">${mapPointButton('清空', `data-map-point-clear-search${mapPointView.query ? '' : ' hidden'}`)}<span data-map-point-count>${mapPointCount(visibility)}</span></div>` +
-      `<div data-map-point-browser>${mapPointBrowserHtml(visibility)}</div><p class="lj-map-point-note">只控制地图上的点和名称；目录、正文及已选地点保留。电车站、地形和生活片区沿用现有显示规则。</p></div>`;
+    const visibility = mapPointVisibility(value), introductions = mapPointView.mode === 'introductions';
+    return `<div class="lj-map-point-settings${introductions ? ' lj-peer-quota-mode' : ''}" data-map-point-settings><div class="lj-place-category-modes" aria-label="地点分类用途">${[['map', '地图显示'], ['introductions', '同级介绍']].map(([id, label]) => `<button type="button" data-place-category-mode="${id}" aria-pressed="${mapPointView.mode === id}">${label}</button>`).join('')}</div>` +
+      `<div class="lj-map-point-global"><span>${introductions ? `每类默认 ${DEFAULT_PEER_PLACE_QUOTA} 个 · 完成输入即时保存` : '适用于全部地区'}</span>${introductions ? '<span class="lj-peer-quota-hint">0 为不展开</span>' : `<div class="lj-map-point-actions">${mapPointButton('全部显示', 'data-map-point-all="show"')}${mapPointButton('全部隐藏', 'data-map-point-all="hide"')}</div>`}</div>` +
+      `<div class="lj-map-point-search"><label for="lj-map-point-search">查找分类</label><input id="lj-map-point-search" type="search" data-map-point-search value="${esc(mapPointView.query)}" placeholder="输入名称，查找所有分类" autocomplete="off">${mapPointButton('清空', `data-map-point-clear-search${mapPointView.query ? '' : ' hidden'}`)}<span data-map-point-count>${introductions ? '各类独立设置' : mapPointCount(visibility)}</span></div>` +
+      `<div data-map-point-browser>${mapPointBrowserHtml(visibility)}</div><p class="lj-map-point-note">${introductions ? '只限制同级地点的附带介绍；各类独立，不联动下级分类。收藏优先取用，普通地点随机补足。' : '只控制地图上的点和名称；目录、正文及已选地点保留。电车站、地形和生活片区沿用现有显示规则。'}</p></div>`;
   }
   function mapPointBrowserHtml(visibility) {
-    const scope = activeMapScope(), current = activeMapGroup(), query = mapPointView.query.trim().toLowerCase();
+    const scope = activeMapScope(), current = activeMapGroup(), query = mapPointView.query.trim().toLowerCase(), introductions = mapPointView.mode === 'introductions';
+    const quotas = peerQuotas(), labels = introductions ? peerPlaceLabels : mapPointLabels;
     const count = item => item.categoryIds.filter(id => visibility[id]).length;
+    const groupCount = item => introductions ? `${item.categoryIds.length} 类` : `${count(item)} / ${item.categoryIds.length}`;
     const rows = (owner, item) => [...item.categoryIds].sort((a, b) => Number(metroParentIds.has(a)) - Number(metroParentIds.has(b)))
-      .map(id => ({ id, label: mapPointLabels.get(id), path: `${owner.label} · ${item.label}` }));
-    const items = query ? MAP_POINT_SCOPES.flatMap(owner => owner.groups.flatMap(item => rows(owner, item)))
+      .map(id => ({ id, label: labels.get(id), path: `${owner.label} · ${item.label}` }));
+    const items = query ? categoryScopes().flatMap(owner => owner.groups.flatMap(item => rows(owner, item)))
       .filter(item => `${item.label} ${item.path}`.toLowerCase().includes(query)) : rows(scope, current);
-    return `<div class="lj-map-point-tabs" aria-label="兴趣点类型">${MAP_POINT_SCOPES.map(item => `<button type="button" data-map-point-select-scope="${item.id}" aria-pressed="${item.id === scope.id}">${esc(item.label)}</button>`).join('')}</div>` +
-      `<div class="lj-map-point-browser${query ? ' searching' : ''}"><nav class="lj-map-point-groups" aria-label="分类组" data-map-point-scroll="groups"><span>选择分类</span>${scope.groups.map(item => `<button type="button" data-map-point-select-group="${item.id}" aria-pressed="${item.id === current.id}"><span>${esc(item.label)}</span><small>${count(item)} / ${item.categoryIds.length}</small></button>`).join('')}</nav>` +
-      `<div class="lj-map-point-content"><div class="lj-map-point-select"><label for="lj-map-point-group-select">选择分类</label><select id="lj-map-point-group-select" data-map-point-group-select>${scope.groups.map(item => `<option value="${item.id}"${item.id === current.id ? ' selected' : ''}>${esc(item.label)}　${count(item)} / ${item.categoryIds.length}</option>`).join('')}</select></div>` +
-      `<div class="lj-map-point-heading"><div><strong>${esc(query ? `“${mapPointView.query.trim()}”的分类结果` : current.label)}</strong><small>${query ? `共 ${items.length} 类 · 跨全部分类查找` : `已显示 ${count(current)} / ${current.categoryIds.length} 类`}</small></div>${query ? '' : `<div class="lj-map-point-actions">${mapPointButton('本组显示', `data-map-point-toggle-group="${current.id}" data-map-point-value="show"`)}${mapPointButton('本组隐藏', `data-map-point-toggle-group="${current.id}" data-map-point-value="hide"`)}</div>`}</div>` +
-      `<div class="lj-map-point-results" data-map-point-scroll="categories" tabindex="0" aria-label="分类开关列表"><div class="lj-map-point-grid">${items.length ? items.map(item => `<div class="lj-map-point-row"><span>${esc(item.label)}${query ? `<small>${esc(item.path)}</small>` : ''}</span><button type="button" class="${switchClass(visibility[item.id])}" data-map-point-category="${item.id}" aria-label="在地图显示${esc(item.label)}" aria-pressed="${visibility[item.id]}"></button></div>`).join('') : '<p class="lj-map-point-empty">没有找到相应分类，换个名称试试。</p>'}</div></div></div></div>`;
+    const quotaControl = item => `<div class="lj-peer-quota-control"><label><input type="number" min="0" step="1" inputmode="numeric" data-peer-place-quota="${esc(item.id)}" value="${esc(quotaDrafts.has(item.id) ? quotaDrafts.get(item.id) : quotas[item.id] ?? DEFAULT_PEER_PLACE_QUOTA)}" aria-label="${esc(item.label)}同级介绍数量"${quotaErrors.has(item.id) ? ' aria-invalid="true"' : ''}><span>个</span></label>${quotaErrors.has(item.id) ? '<small role="alert">请输入 0 或正整数</small>' : ''}</div>`;
+    return `<div class="lj-map-point-tabs" aria-label="地点类型">${categoryScopes().map(item => `<button type="button" data-map-point-select-scope="${item.id}" aria-pressed="${item.id === scope.id}">${esc(item.label)}</button>`).join('')}</div>` +
+      `<div class="lj-map-point-browser${query ? ' searching' : ''}"><nav class="lj-map-point-groups" aria-label="分类组" data-map-point-scroll="groups"><span>选择分类</span>${scope.groups.map(item => `<button type="button" data-map-point-select-group="${item.id}" aria-pressed="${item.id === current.id}"><span>${esc(item.label)}</span><small>${groupCount(item)}</small></button>`).join('')}</nav>` +
+      `<div class="lj-map-point-content"><div class="lj-map-point-select"><label for="lj-map-point-group-select">选择分类</label><select id="lj-map-point-group-select" data-map-point-group-select>${scope.groups.map(item => `<option value="${item.id}"${item.id === current.id ? ' selected' : ''}>${esc(item.label)}　${groupCount(item)}</option>`).join('')}</select></div>` +
+      `<div class="lj-map-point-heading"><div><strong>${esc(query ? `“${mapPointView.query.trim()}”的分类结果` : current.label)}</strong><small>${query ? `共 ${items.length} 类 · 跨全部分类查找` : introductions ? `${current.categoryIds.length} 类 · 数量互不联动` : `已显示 ${count(current)} / ${current.categoryIds.length} 类`}</small></div>${query || introductions ? '' : `<div class="lj-map-point-actions">${mapPointButton('本组显示', `data-map-point-toggle-group="${current.id}" data-map-point-value="show"`)}${mapPointButton('本组隐藏', `data-map-point-toggle-group="${current.id}" data-map-point-value="hide"`)}</div>`}</div>` +
+      `<div class="lj-map-point-results" data-map-point-scroll="categories" tabindex="0" aria-label="${introductions ? '分类介绍数量' : '分类开关'}列表"><div class="lj-map-point-grid">${items.length ? items.map(item => `<div class="lj-map-point-row"><span>${esc(item.label)}${query ? `<small>${esc(item.path)}</small>` : ''}</span>${introductions ? quotaControl(item) : `<button type="button" class="${switchClass(visibility[item.id])}" data-map-point-category="${item.id}" aria-label="在地图显示${esc(item.label)}" aria-pressed="${visibility[item.id]}"></button>`}</div>`).join('') : '<p class="lj-map-point-empty">没有找到相应分类，换个名称试试。</p>'}</div></div></div></div>`;
   }
   function rememberMapPointView() {
     content.querySelectorAll('[data-map-point-scroll]').forEach(node => { mapPointView.scrolls[node.dataset.mapPointScroll] = node.scrollTop; });
@@ -131,6 +153,8 @@ export function mountSettings(ui) {
   function mapPointFocus() {
     const active = document.activeElement;
     if (!active || !content.contains(active)) return '';
+    if (active.hasAttribute('data-peer-place-quota')) return `[data-peer-place-quota="${active.dataset.peerPlaceQuota}"]`;
+    if (active.hasAttribute('data-place-category-mode')) return `[data-place-category-mode="${active.dataset.placeCategoryMode}"]`;
     return ['category', 'all', 'toggle-group', 'value', 'select-scope', 'select-group', 'group-select', 'search', 'clear-search']
       .filter(key => active.hasAttribute(`data-map-point-${key}`)).map(key => `[data-map-point-${key}="${active.getAttribute(`data-map-point-${key}`)}"]`).join('');
   }
@@ -164,28 +188,32 @@ export function mountSettings(ui) {
       const place = `<input${desktop ? '' : ' class="input"'} type="text" list="lj-favorite-results-${index}" data-favorite-index="${index}" data-favorite-field="name" value="${esc(item.name)}" aria-label="常用地点${index + 1}地点全名">`;
       return `<div class="${desktop ? 'set12-favorite' : 'v-favorite-setting'}">${desktop ? `<b>${index + 1}</b><label>自定义名${name}</label><label>地点全名${place}</label>` : name + place}</div><datalist id="lj-favorite-results-${index}"></datalist><div class="${desktop ? 'set12-control' : 'set-control'} lj-favorite-actions">${button('favorite-current', '使用当前地点', false, `data-index="${index}"`)}${button('favorite-clear', '清空', false, `data-index="${index}"`)}<span class="lj-meta" id="lj-favorite-hint-${index}">${item.entityId ? '已对应独立地点' : '尚未选择地点'}</span></div>`;
     }).join('');
-    const note = '自定义名建议五字以内；较长名称完整保留。地点填写资料中已有的完整名称。';
-    if (desktop) return group('四个常用地点', '独立保存', `<p class="set12-favoritenote">${note}</p>${rows}`);
+    const note = '用于地图与路线的四个快捷位置，与地区页收藏分别保存。地点填写已有全名，自定义名建议五字以内。';
+    if (desktop) return group('四个常用地点', '独立保存', `<p class="set12-favoritenote">${note}</p>${rows}${saveBar('favorites')}`);
     return group('四个常用地点', '独立保存', `<div class="set-row"><div class="v-favorite-labels"><span>自定义名</span><span>地点全名</span></div>${rows}<p>${note}</p></div>` + saveBar('favorites'), 'settings-places');
+  }
+  function placesHtml() {
+    return group('地点分类', '按用途分别设置', mapPointsHtml(store.read().extensionUi?.mapPointVisibility)) + favoritesHtml();
   }
   function backupHtml() {
     const state = store.read(), overrides = ui.engine.normalizeTextOverrides(state.livingJapanTextOverrides);
     const library = state.materialLibrary || {};
     const materialCount = [['categories', '分类'], ['regions', '地域'], ['fragments', '片段'], ['places', '地点'], ['bindings', '挂接']].map(([key, label]) => `${Object.keys(library[key] || {}).length} ${label}`).join(' · ');
-    const backupNote = `完整用户备份包含修改稿、空位、资料分类与片段、地域、地点挂接、开关与偏好，不包含内置资料。当前自建资料：${materialCount}。`;
+    const placeEdits = state.placeEdits || {};
+    const backupNote = `完整用户备份包含地点个人修改、自建地点、正文修改稿与空位、资料词条、收藏与隐藏，以及全部设置；不包含内置资料。当前地点修改 ${Object.keys(placeEdits.overrides || {}).length} 处，自建地点 ${Object.keys(placeEdits.created || {}).length} 处。资料登记：${materialCount}。`;
     const file = '<input type="file" accept="application/json,.json" data-settings-file hidden>';
     const updateButtons = button('check-update', '检查程序更新') + button('update', '更新程序', false, !updateResult?.available ? 'disabled' : '');
     const programRow = row('程序框架', '<div class="lj-update-controls"><p class="lj-update-line" data-program-update-note role="status"></p><div class="lj-update-actions">' + updateButtons + '</div></div>');
     const packageRow = ui.bridge.packages ? row('地区资料', '<div class="lj-update-controls"><p class="lj-update-line" data-package-update-note role="status"></p><div class="lj-update-actions">' + button('check-pack-updates', '检查资料更新') + button('region-packs', '地区资料包') + button('update-log', '更新记录') + '</div><div class="lj-update-copy"><p class="lj-update-small" data-update-summary></p><p class="lj-update-small" data-update-notice></p></div></div>') : '';
-    const guideParts = [['map','地图'],['locations','地区'],['packages','资料'],['check','检查'],['save','保存与恢复']].map(([id,label]) => button(`guide-${id}`, label)).join('');
+    const guideParts = GUIDE_CHAPTERS.map(({id,label}) => button(`guide-${id}`, label)).join('');
     const orphanList = `<ul>${Object.entries(overrides.orphans).map(([key, item]) => `<li>${esc(item.packageId || key)} · ${esc(key)}</li>`).join('')}</ul>`;
     if (desktop) return group('用户资料备份', `${Object.keys(overrides.records).length} 段修改稿 · ${Object.keys(overrides.orphans).length} 段未对应`, row('导出用户备份', button('export', '导出用户备份'), backupNote) + row('导入用户备份', button('import', '导入备份') + file, '导入前先预览将要合并和覆盖的内容。')) +
       group('扩展更新', '保留用户保存', programRow + packageRow) +
-      group('使用说明与操作引导', '跟随实际按钮，可随时结束', `<div class="set12-guide"><p>完整或单页重播不受首次提示选择影响。</p><div class="set12-guidefull"><div><strong>重新观看完整引导</strong><small>地图 → 地区 → 资料 → 检查 → 保存</small></div>${button('guide-all', '开始完整引导', true)}</div><div class="set12-partgrid">${guideParts}</div></div>`) +
+      group('使用说明与操作引导', '七篇详细导览，可随时结束', `<div class="set12-guide"><p>可完整顺读或按分篇查看；只阅读并略过实践也可以，不会替你保存或改开关。</p><div class="set12-guidefull"><div><strong>重新观看完整引导</strong><small>地图 → 地区 → 编辑 → 资料 → 地点设置 → 诊断 → 读取备份</small></div>${button('guide-all', '开始完整引导', true)}</div><div class="set12-partgrid lj-guide-parts">${guideParts}</div></div>`) +
       (Object.keys(overrides.orphans).length ? group('未对应旧稿', '仍在备份中保留', `<div class="set12-guide">${orphanList}</div>`) : '');
     return group('备份与说明', '低频入口', row('用户资料备份', button('export', '导出用户备份') + button('import', '导入备份') + file, backupNote) +
-      programRow + packageRow + row('完整操作引导', button('guide-all', '开始完整引导', true), '完整或单页重播不受首次提示选择影响。') +
-      row('分篇查看', guideParts, '跟随实际按钮，可随时结束。') + (Object.keys(overrides.orphans).length ? `<div class="set-row"><div class="set-label"><b>未对应旧稿</b></div><p>仍在备份中保留。</p>${orphanList}</div>` : ''), 'settings-backup');
+      programRow + packageRow + row('完整操作引导', button('guide-all', '开始完整引导', true), '七篇详细导览，可只阅读并略过实践；不会替你保存或改开关。') +
+      row('分篇查看', `<div class="lj-guide-parts">${guideParts}</div>`, '按当前布局查看真实入口；可随时结束或重播。') + (Object.keys(overrides.orphans).length ? `<div class="set-row"><div class="set-label"><b>未对应旧稿</b></div><p>仍在备份中保留。</p>${orphanList}</div>` : ''), 'settings-backup');
   }
   function patchUpdateStatus() {
     const header = document.getElementById(desktop ? 'set12Headnote' : 'lj-settings-status');
@@ -194,7 +222,7 @@ export function mountSettings(ui) {
         if (!header.querySelector('[data-settings-action="open-update-section"]')) header.innerHTML = '<button type="button" class="lj-update-link" data-settings-action="open-update-section">有可用更新</button>';
         header.hidden = false;
       } else {
-        header.textContent = desktop ? { common: '常用设置即时保存', reading: '读取设置由本组统一保存', favorites: '四个常用地点独立保存', backup: '个人备份与扩展更新分开' }[tab] : status || '常用设置即时保存；读取设置与常用地点分别保存。';
+        header.textContent = desktop ? TAB_NOTES[tab] : status || TAB_NOTES[tab];
       }
     }
     const put = (selector, text) => { const node = content.querySelector(selector); if (node) node.textContent = text; };
@@ -226,18 +254,11 @@ export function mountSettings(ui) {
     dialog.addEventListener('cancel', event => { event.preventDefault(); closeUpdateLog(); });
     document.body.append(dialog); dialog.showModal(); dialog.querySelector('[data-update-log-close]')?.focus();
   }
-  function updateTabs() {
-    tabs.querySelectorAll('[data-lj-settings-tab]').forEach(node => { const active = node.dataset.ljSettingsTab === tab; node.classList.toggle('on', active); node.setAttribute('aria-pressed', String(active)); });
-  }
   function openTab(value, channel) {
     rememberScroll();
     tab = value === 'places' ? 'favorites' : value;
-    if (desktop) render(true);
-    else {
-      updateTabs();
-      const target = document.getElementById(`settings-${tab === 'favorites' ? 'places' : tab}`);
-      if (target) content.scrollTop = Math.max(0, content.scrollTop + target.getBoundingClientRect().top - content.getBoundingClientRect().top - (mobile ? 0 : 12));
-    }
+    if (!TABS.some(([id]) => id === tab)) tab = 'common';
+    render(true);
     if (channel) document.getElementById(`lj-channel-${channel}`)?.scrollIntoView({ block: 'nearest' });
   }
   function openUpdateSection() {
@@ -248,16 +269,17 @@ export function mountSettings(ui) {
   const headingClick = event => { if (event.target.closest('[data-settings-action="open-update-section"]')) openUpdateSection(); };
   heading?.addEventListener('click', headingClick);
   function render(force = false) {
-    if (!force && content.contains(document.activeElement) && (readingDirty || favoritesDirty)) return;
+    if (!force && content.contains(document.activeElement) && (readingDirty || favoritesDirty || quotaDrafts.size)) return;
     rememberMapPointView();
     const mapFocus = mapPointFocus();
     initDrafts();
     tabs.innerHTML = TABS.map(([id, label]) => `<button type="button" data-lj-settings-tab="${id}" class="${tab === id ? 'on' : ''}" aria-pressed="${tab === id}">${label}</button>`).join('');
     const note = document.getElementById('set12Headnote');
-    if (note) note.textContent = { common: '常用设置即时保存', reading: '读取设置由本组统一保存', favorites: '四个常用地点独立保存', backup: '个人备份与扩展更新分开' }[tab];
-    if (desktop) content.innerHTML = `<div class="set12-scroll"><p class="lj-status ${tone}" role="status" id="lj-settings-status"${status ? '' : ' hidden'}>${esc(status)}</p>${tab === 'common' ? commonHtml() : tab === 'reading' ? readingHtml() : tab === 'favorites' ? favoritesHtml() : backupHtml()}</div>${tab === 'reading' || tab === 'favorites' ? saveBar(tab) : ''}`;
-    else content.innerHTML = `<div class="settings-status ${tone}" role="status" id="lj-settings-status">${esc(status || '常用设置即时保存；读取设置与常用地点分别保存。')}</div>${commonHtml()}${readingHtml()}${favoritesHtml()}${backupHtml()}`;
-    scroller().scrollTop = scrolls[desktop ? tab : 'all'] || 0;
+    if (note) note.textContent = TAB_NOTES[tab];
+    const page = tab === 'common' ? commonHtml() : tab === 'reading' ? readingHtml() : tab === 'favorites' ? placesHtml() : backupHtml();
+    if (desktop) content.innerHTML = `<div class="set12-scroll"><p class="lj-status ${tone}" role="status" id="lj-settings-status"${status ? '' : ' hidden'}>${esc(status)}</p>${page}</div>${tab === 'reading' ? saveBar(tab) : ''}`;
+    else content.innerHTML = `<div class="settings-status ${tone}" role="status" id="lj-settings-status">${esc(status || TAB_NOTES[tab])}</div>${page}`;
+    scroller().scrollTop = scrolls[tab] || 0;
     restoreMapPointView();
     if (mapFocus) content.querySelector(mapFocus)?.focus({ preventScroll: true });
     content.querySelectorAll('button,select,input').forEach(node => { if (busy) node.disabled = true; });
@@ -287,12 +309,28 @@ export function mountSettings(ui) {
     if (unmatched) { message(`“${unmatched.name}”尚未对应唯一地点，请先选择明确地点`, 'error'); return false; }
     return saving(async () => { await store.update(draft => { draft.extensionUi ||= {}; draft.extensionUi.favorites = clone(favorites); }); favoritesDirty = false; }, '四个常用地点已保存');
   }
+  function savePeerQuota(id) {
+    quotaSaveQueue = quotaSaveQueue.then(() => commitPeerQuota(id));
+    return quotaSaveQueue;
+  }
+  async function commitPeerQuota(id) {
+    if (!quotaDrafts.has(id)) return true;
+    const raw = quotaDrafts.get(id).trim(), value = Number(raw);
+    if (!raw || !Number.isSafeInteger(value) || value < 0) {
+      quotaErrors.add(id); render(true); message('介绍数量请填写 0 或正整数；当前输入已保留', 'error'); return false;
+    }
+    return saving(async () => {
+      await session.runtime.saveSettings({ ...settings(), peerPlaceQuotas: { ...peerQuotas(), [id]: value } });
+      if (quotaDrafts.get(id)?.trim() === raw) { quotaDrafts.delete(id); quotaErrors.delete(id); }
+    }, '同级介绍数量已保存');
+  }
   async function requestLeave() {
-    if (!readingDirty && !favoritesDirty) return true;
+    await quotaSaveQueue;
+    if (!readingDirty && !favoritesDirty && !quotaDrafts.size) return true;
     rememberScroll();
-    const choice = await ui.ask({ title: '设置尚未保存', message: '读取设置或常用地点有本次修改。', choices: [{ id: 'save', label: '保存并继续', primary: true }, { id: 'discard', label: '不保存并继续' }, { id: 'cancel', label: '留在设置' }] });
-    if (choice === 'save') { if (readingDirty && !(await saveReading())) return false; if (favoritesDirty && !(await saveFavorites())) return false; return true; }
-    if (choice === 'discard') { readingDirty = favoritesDirty = false; initDrafts(); render(true); return true; }
+    const choice = await ui.ask({ title: '设置尚未保存', message: '读取设置、常用地点或介绍数量有尚未保存的输入。', choices: [{ id: 'save', label: '保存并继续', primary: true }, { id: 'discard', label: '不保存并继续' }, { id: 'cancel', label: '留在设置' }] });
+    if (choice === 'save') { for (const id of quotaDrafts.keys()) if (!(await savePeerQuota(id))) return false; if (readingDirty && !(await saveReading())) return false; if (favoritesDirty && !(await saveFavorites())) return false; return true; }
+    if (choice === 'discard') { readingDirty = favoritesDirty = false; quotaDrafts.clear(); quotaErrors.clear(); initDrafts(); render(true); return true; }
     return false;
   }
   function markDraft(kind) {
@@ -318,6 +356,7 @@ export function mountSettings(ui) {
   });
   content.addEventListener('input', event => {
     const input = event.target;
+    if (input.hasAttribute('data-peer-place-quota')) { quotaDrafts.set(input.dataset.peerPlaceQuota, input.value); quotaErrors.delete(input.dataset.peerPlaceQuota); return; }
     if (input.hasAttribute('data-map-point-search')) { mapPointView.query = input.value; refreshMapPointBrowser(); return; }
     if (input.dataset.settingsReading) { const key = input.dataset.settingsReading; reading[key] = key === 'historyDepth' ? Number(input.value) : input.value; markDraft('reading'); }
     if (input.dataset.settingsBoundary) { reading.currentUserBoundary[input.dataset.settingsBoundary] = input.value; markDraft('reading'); }
@@ -338,17 +377,25 @@ export function mountSettings(ui) {
   }
   content.addEventListener('change', async event => {
     const input = event.target;
-    if (input.hasAttribute('data-map-point-group-select')) { mapPointView.groups[mapPointView.scope] = input.value; refreshMapPointBrowser(); return; }
+    if (input.hasAttribute('data-peer-place-quota')) { await savePeerQuota(input.dataset.peerPlaceQuota); return; }
+    if (input.hasAttribute('data-map-point-group-select')) { mapPointView.groups[mapPointView.scope] = input.value; refreshMapPointBrowser(); try { await persistCategoryView(); } catch (error) { message(error.message, 'error'); } return; }
     if (input.matches('select[data-settings-common]')) { try { await commonChange(input.dataset.settingsCommon, input.value); } catch (error) { message(error.message, 'error'); } }
     if (!input.matches('[data-settings-file]')) return;
     const file = input.files?.[0]; input.value = ''; if (!file) return;
     try {
       const preview = store.importBackup(await file.text()), s = preview.summary;
-      const choice = await ui.ask({ title: '导入用户备份', message: `新增 ${s.added} 段，覆盖 ${s.overwritten} 段，未对应 ${s.unresolved} 段；${s.baseChanged} 段的原文基准有变化。${s.materialLibraryIncluded ? `资料登记新增 ${s.materialRecordsAdded} 条，覆盖 ${s.materialRecordsOverwritten} 条（分类、地域、片段、地点及挂接）。` : ''}${s.settingsIncluded ? '此完整备份还会合并开关、偏好与自建空位。' : '此文件只导入修改稿。'}`, choices: [{ id: 'cancel', label: '取消' }, { id: 'import', label: '确认导入', primary: true }] });
+      const placeChanges = s.placeEditsAdded || s.placeEditsOverwritten || s.placesCreatedAdded || s.placesCreatedOverwritten
+        ? `地点个人修改新增 ${s.placeEditsAdded || 0} 处、覆盖 ${s.placeEditsOverwritten || 0} 处；自建地点新增 ${s.placesCreatedAdded || 0} 处、覆盖 ${s.placesCreatedOverwritten || 0} 处。` : '';
+      const choice = await ui.ask({ title: '导入用户备份', message: `新增 ${s.added} 段，覆盖 ${s.overwritten} 段，未对应 ${s.unresolved} 段；${s.baseChanged} 段的原文基准有变化。${placeChanges}${s.materialLibraryIncluded ? `资料登记新增 ${s.materialRecordsAdded} 条，覆盖 ${s.materialRecordsOverwritten} 条（分类、地域、片段、地点及挂接）。` : ''}${s.settingsIncluded ? '此完整备份还会合并开关、偏好与自建空位。' : '此文件只导入修改稿。'}`, choices: [{ id: 'cancel', label: '取消' }, { id: 'import', label: '确认导入', primary: true }] });
       if (choice === 'import') await saving(() => store.applyImport(preview), '用户备份已导入并读回确认');
     } catch (error) { message(error.message, 'error'); }
   });
   content.addEventListener('click', async event => {
+    const panel = event.target.closest('[data-place-category-mode]');
+    if (panel) {
+      rememberScroll(); rememberMapPointView(); mapPointView.mode = panel.dataset.placeCategoryMode; render(true);
+      try { await persistCategoryView(); } catch (error) { message(error.message, 'error'); } return;
+    }
     const mapNavigation = event.target.closest('[data-map-point-select-scope],[data-map-point-select-group],[data-map-point-clear-search]');
     if (mapNavigation) {
       if (mapNavigation.dataset.mapPointSelectScope) { mapPointView.scope = mapNavigation.dataset.mapPointSelectScope; mapPointView.query = ''; }
@@ -356,6 +403,7 @@ export function mountSettings(ui) {
       if (mapNavigation.hasAttribute('data-map-point-clear-search')) mapPointView.query = '';
       refreshMapPointBrowser();
       if (mapNavigation.hasAttribute('data-map-point-clear-search')) content.querySelector('[data-map-point-search]').focus({ preventScroll: true });
+      if (!mapNavigation.hasAttribute('data-map-point-clear-search')) try { await persistCategoryView(); } catch (error) { message(error.message, 'error'); }
       return;
     }
     const mapControl = event.target.closest('[data-map-point-category],[data-map-point-toggle-group],[data-map-point-all]');
@@ -416,5 +464,5 @@ export function mountSettings(ui) {
   function destroy() { unsubscribeLocationInput?.(); unsubscribePackUpdates?.(); unsubscribeProgramUpdates?.(); heading?.removeEventListener('click', headingClick); closeUpdateLog(); }
   document.defaultView?.addEventListener('unload', destroy, { once: true });
   render();
-  return { render, requestLeave, openTab, destroy, hasUnsaved: () => readingDirty || favoritesDirty };
+  return { render, requestLeave, openTab, destroy, hasUnsaved: () => readingDirty || favoritesDirty || quotaDrafts.size > 0 };
 }

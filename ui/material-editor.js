@@ -43,7 +43,7 @@ export function createMaterialEditor(ui) {
       const parent = node.categoryId ? library().categories[node.categoryId] : null;
       const fields = [{ id: 'name', label: '分类名称', value: '' }];
       if (node.layer === 'TN' && !parent) fields.push({ id: 'mode', label: '适用方式', value: 'bound', options: [{ value: 'bound', label: '地点挂接此词条后适用' }, { value: 'regional', label: '按地域与时间适用' }] });
-      const result = await ui.ask({ title: '新增分类', message: parent ? '上级：' + compactName(library(), parent.id) : '所属：' + MATERIAL_LAYER_LABELS[node.layer], fields, choices: [cancel, saveChoice] });
+      const result = await ui.ask({ title: '新增分类', message: parent ? '上级：' + compactName(library(), parent.id) : '所属：' + MATERIAL_LAYER_LABELS[node.layer], fields, confirmDiscard: true, choices: [cancel, saveChoice] });
       if (result.id !== 'save') return;
       const name = result.values.name.trim(); if (!name) { ui.notify('请填写分类名称', 'error'); return; }
       const id = crypto.randomUUID(), value = raw();
@@ -52,13 +52,13 @@ export function createMaterialEditor(ui) {
       await ui.locateMaterialNode(materialCategoryNodeId(id, node.layer === 'TN' ? node.regionId || 'jp' : ''));
       ui.notify('分类已建立，正文可以保持为空');
     } else if (kind === 'region') {
-      const result = await ui.ask({ title: '新增适用地域', message: '建立一个独立地域；之后可在地点的词条属性中选择它。', fields: [{ id: 'name', label: '地域名称', value: '' }], choices: [cancel, saveChoice] });
+      const result = await ui.ask({ title: '新增适用地域', message: '建立一个独立地域；之后可在地点的词条属性中选择它。', fields: [{ id: 'name', label: '地域名称', value: '' }], confirmDiscard: true, choices: [cancel, saveChoice] });
       if (result.id !== 'save') return;
       const name = result.values.name.trim(); if (!name) { ui.notify('请填写地域名称', 'error'); return; }
       const id = crypto.randomUUID(), value = raw(); value.regions[id] = { id, name, parentId: 'jp' };
       await persist(value); await ui.locateMaterialNode('material-region:' + id); ui.notify('适用地域已建立');
     } else if (kind === 'fragment') {
-      const result = await ui.ask({ title: '新增资料片段', message: '分类：' + compactName(library(), node.categoryId), fields: [{ id: 'title', label: '片段名称', value: '' }, { id: 'regionId', label: '适用地域', value: node.regionId || 'jp', options: regionOptions(library()) }], choices: [cancel, { id: 'save', label: '建立并编辑', primary: true }] });
+      const result = await ui.ask({ title: '新增资料片段', message: '分类：' + compactName(library(), node.categoryId), fields: [{ id: 'title', label: '片段名称', value: '' }, { id: 'regionId', label: '适用地域', value: node.regionId || 'jp', options: regionOptions(library()) }], confirmDiscard: true, choices: [cancel, { id: 'save', label: '建立并编辑', primary: true }] });
       if (result.id !== 'save') return;
       const title = result.values.title.trim(); if (!title) { ui.notify('请填写片段名称', 'error'); return; }
       const id = crypto.randomUUID(), value = raw(); value.fragments[id] = { id, title, categoryId: node.categoryId, regionId: result.values.regionId, familyId: '', conditions: {} };
@@ -103,6 +103,7 @@ export function createMaterialEditor(ui) {
     return { ...saved, id, name: entity.name || entity.label, aliases: entity.aliases || [], fullNames: entity.fullNames || [entity.name || entity.label], legacyPlaceId: entity.legacyPlaceId || undefined, sourceIds: placeIdentityIds(entity, ui.engine.data), adminPath: entity.adminPath || [], adminNodes: entity.adminNodes || [], regionCode: entity.regionCode || null, coordinates: entity.coordinates || null, type: entity.type || '', kind: entity.kind || '', climateRegionId: climateRegionId || null };
   }
   async function editIntroduction(entity) {
+    if(ui.placeEditor&&entity&&!entity.materialFragmentId)return ui.placeEditor.open(entity,{tab:'text'});
     if (!entity || entity.materialFragmentId || !library() || !(await allowed())) return;
     const result = await ui.ask({ title: (entity.name || entity.label) + ' · 一句话介绍', message: '显示在地点卡片和相关地点列表，可留空。', fields: [{ id: 'summary', label: '一句话介绍', multiline: true, value: placeIntroduction(entity, ui.engine.data) }], choices: [cancel, saveChoice] });
     if (result.id !== 'save') return;
@@ -125,6 +126,7 @@ export function createMaterialEditor(ui) {
     }
   }
   async function showPlace(entity) {
+    if(ui.placeEditor&&entity&&!entity.materialFragmentId)return ui.placeEditor.open(entity,{tab:'data'});
     if (!entity || !library() || !(await allowed())) return;
     const id = entityKey(entity);
     let selected = '', climateRegionId = pointRegion(entity) || '';
