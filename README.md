@@ -1,5 +1,7 @@
 # Living Japan v20261102
 
+**地点资料协作：[Living-Japan-Places](https://github.com/yyxz223-stack/Living-Japan-Places)。地点正本仅在独立资料仓库维护；地点协作者不授予本体仓库写权限，资料更新发布前由所有者确认。**
+
 **[项目待办事项树](PROJECT_TODO.md)** · 首都圈 SDQ20261102 · 本页与默认 main 分支提供最新达摩版轻本体。
 
 ## 酒馆安装
