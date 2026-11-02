@@ -34,7 +34,8 @@ export async function startLivingJapan({ baseUrl, context: suppliedContext, stor
   await session.start();
   const updates = suppliedUpdates || createUpdateManager({ context, extensionName: String(baseUrl).split('/').filter(Boolean).at(-1) || 'Living-Japan' });
   if (!suppliedUpdates) void updates.check().catch(()=>{});
-  let shell = null, shellViewport = null, shellScroll = null, frame = null, activeLayout = null, resizeHandle = null, sizeDrag = null;
+  let shell = null, shellViewport = null, shellScroll = null, frame = null, activeLayout = null, sizeDrag = null;
+  const resizeHandles = [];
   let inputObserver = null;
   // LJ-WINDOW-GEOMETRY-20261102: each layout restores one saved geometry inside the visible outer-frame bounds.
   const geometryKey = mode => mode === 'desktop' ? 'horizontal' : mode === 'portrait' ? 'vertical' : null;
@@ -68,38 +69,75 @@ export async function startLivingJapan({ baseUrl, context: suppliedContext, stor
     geometries[key] = currentGeometry();
   }
   let requestedLayout = store.read().extensionUi?.layout || 'auto';
+  let previewLayoutOverride = false, mobileRest = null, mobileFocusRest = null, mobileKeyboard = false;
+  const isPhone = () => {
+    const shortSide = Math.min(window.screen?.width || Infinity, window.screen?.height || Infinity);
+    return shortSide <= 600 && (window.navigator?.maxTouchPoints > 0 || window.matchMedia?.('(pointer: coarse)').matches);
+  };
   const isPinned=data=>(data.extensionUi?.pinned??data.livingJapanUIPreferences?.panelPinned)!==false;
   let pinned=isPinned(store.read());
   const state = { regionCode: 'metro', selectedId: null, routeOrigin: null, routeDestination: null, travelMode: 'public_transit', page: 'map', history: [] };
   // LJ-PREVIEW-WINDOW-01: explicit layouts and one in-frame close control share a bounded shell.
-  function layout() { return requestedLayout === 'auto' ? (window.innerWidth <= 600 ? 'mobile' : 'desktop') : requestedLayout; }
-  // LJ-DESKTOP-SIZE-20261030: the approved 8:5 desktop frame fits above chat input with its original 960px minimum width.
+  function layout() {
+    if (isPhone() && !previewLayoutOverride) return 'mobile';
+    return requestedLayout === 'auto' ? (window.innerWidth <= 600 ? 'mobile' : 'desktop') : requestedLayout;
+  }
+  function hasTextFocus() {
+    let focused = document.activeElement;
+    try { if (focused === frame) focused = frame.contentDocument?.activeElement || frame.contentWindow?.document?.activeElement; } catch {}
+    return focused?.isContentEditable || focused?.tagName === 'TEXTAREA'
+      || (focused?.tagName === 'INPUT' && !['button', 'submit', 'reset', 'checkbox', 'radio', 'range', 'color', 'file', 'hidden'].includes(focused.type));
+  }
+  // LJ-WINDOW-BOUNDS-20261102: PC uses browser walls; mobile keeps a resting canvas and lifts it above the keyboard.
+  function mobileBounds({ left, top, width, height }) {
+    const input = document.getElementById('send_textarea');
+    const box = input?.getBoundingClientRect(), bottom = top + height;
+    const inputVisible = box?.width > 0 && box.height > 0 && box.bottom > top;
+    const style = inputVisible ? window.getComputedStyle?.(input) : null;
+    const peek = inputVisible ? Math.min(box.height, Math.max(32, Math.min(64, (parseFloat(style?.lineHeight) || 20) * 2 + (parseFloat(style?.paddingTop) || 0) + (parseFloat(style?.paddingBottom) || 0)))) : 0;
+    const gap = inputVisible ? Math.max(0, bottom - box.bottom) : 0;
+    const rotated = mobileRest && Math.abs(width - mobileRest.width) > 2;
+    if (rotated) { mobileRest = mobileFocusRest = null; mobileKeyboard = false; }
+    const focused = hasTextFocus();
+    if (focused && !mobileFocusRest && mobileRest) mobileFocusRest = { ...mobileRest };
+    if (!focused && !mobileKeyboard) mobileFocusRest = null;
+    const resting = mobileFocusRest || mobileRest, drop = resting ? resting.visualHeight - height : 0;
+    if (resting && drop > Math.max(100, resting.visualHeight * .18) && focused) mobileKeyboard = true;
+    if (resting && drop > 2 && (focused || mobileKeyboard)) {
+      mobileRest = resting;
+      const raisedBottom = Math.min(bottom - resting.gap, inputVisible ? box.bottom : bottom) - resting.peek;
+      return { left, top: raisedBottom - resting.height, width, height: resting.height };
+    }
+    if (mobileKeyboard && drop <= 2) { mobileKeyboard = false; mobileFocusRest = null; }
+    // Input growth alone does not rewrite the canvas; browser size/orientation changes do.
+    if (!mobileRest || height !== mobileRest.visualHeight || top !== mobileRest.top || left !== mobileRest.left) {
+      mobileRest = { left, top, width, visualHeight: height, height: Math.max(1, height - gap - peek), gap, peek };
+    }
+    return { left, top, width, height: mobileRest.height };
+  }
   function sizeFrame() {
     if (!shell) return;
     const visual = window.visualViewport;
     const left = visual?.offsetLeft || 0, top = visual?.offsetTop || 0;
     const availableWidth = visual?.width || window.innerWidth;
-    let bottom = top + (visual?.height || window.innerHeight);
-    const inputArea = document.getElementById('preview-input') || document.getElementById('send_textarea');
-    const inputBox = inputArea?.getBoundingClientRect();
-    if (inputBox?.width > 0 && inputBox.height > 0 && inputBox.bottom > top) bottom = Math.min(bottom, Math.max(top, inputBox.top));
-    const availableHeight = Math.max(1, bottom - top), mode = shell.dataset.layout, geometry = geometries[geometryKey(mode)];
-    let width, height, viewportWidth, viewportHeight;
+    const availableHeight = Math.max(1, visual?.height || window.innerHeight), mode = shell.dataset.layout, geometry = geometries[geometryKey(mode)];
+    let width, height, viewportWidth, viewportHeight, mobile;
     if (mode === 'mobile') {
-      width = viewportWidth = availableWidth; height = viewportHeight = availableHeight;
+      mobile = mobileBounds({ left, top, width: availableWidth, height: availableHeight });
+      width = viewportWidth = mobile.width; height = viewportHeight = mobile.height;
     } else {
       const ratio = mode === 'portrait' ? 0.5 : 8 / 5, minimum = mode === 'portrait' ? 640 : 600;
-      const fitted = Math.max(minimum, Math.min(availableHeight - 8, (availableWidth - 32) / ratio));
+      const fitted = Math.max(minimum, Math.min(availableHeight - 8, (availableWidth - 8) / ratio));
       const savedHeight = Number(geometry?.height);
       height = Math.max(minimum, Math.min(geometry && Number.isFinite(savedHeight) ? savedHeight : fitted, fitted)); width = height * ratio;
-      viewportWidth = Math.min(availableWidth, width + 32 + (height > availableHeight - 8 ? 16 : 0));
-      viewportHeight = Math.min(availableHeight, height + 8 + (width > availableWidth - 32 ? 16 : 0));
+      viewportWidth = Math.min(availableWidth, width + 8 + (height > availableHeight - 8 ? 16 : 0));
+      viewportHeight = Math.min(availableHeight, height + 8 + (width > availableWidth - 8 ? 16 : 0));
     }
     const x = Math.min(left + availableWidth - viewportWidth, Number.isFinite(geometry?.x) ? geometry.x : left + (availableWidth - viewportWidth) / 2);
     const y = Math.min(top + availableHeight - viewportHeight, Number.isFinite(geometry?.y) ? geometry.y : top + (availableHeight - viewportHeight) / 2);
     Object.assign(shell.style, { width: `${width}px`, height: `${height}px` });
-    Object.assign(shellViewport.style, { left: `${Math.max(left, x)}px`, top: `${Math.max(top, y)}px`, width: `${viewportWidth}px`, height: `${viewportHeight}px` });
-    Object.assign(shellScroll.style, { width: `${Math.max(1, viewportWidth - (mode === 'mobile' ? 0 : 32))}px`, height: `${Math.max(1, viewportHeight - (mode === 'mobile' ? 0 : 8))}px` });
+    Object.assign(shellViewport.style, { left: `${mobile ? mobile.left : Math.max(left, x)}px`, top: `${mobile ? mobile.top : Math.max(top, y)}px`, width: `${viewportWidth}px`, height: `${viewportHeight}px` });
+    Object.assign(shellScroll.style, { width: `${Math.max(1, viewportWidth - (mode === 'mobile' ? 0 : 8))}px`, height: `${Math.max(1, viewportHeight - (mode === 'mobile' ? 0 : 8))}px` });
     // LJ-PORTRAIT-CANVAS-20261030: shrink approved controls uniformly; additional room grows the content viewport at scale one.
     if (mode === 'portrait' || mode === 'mobile') {
       const innerWidth = shell.clientWidth || width - 2, innerHeight = shell.clientHeight || height - 2;
@@ -107,7 +145,7 @@ export async function startLivingJapan({ baseUrl, context: suppliedContext, stor
       const canvasWidth = scale < 1 ? 430 : innerWidth, canvasHeight = mode === 'portrait' && scale < 1 ? 860 : innerHeight / scale;
       Object.assign(frame.style, { position: 'absolute', width: `${canvasWidth}px`, height: `${canvasHeight}px`, transformOrigin: 'top left', transform: `scale(${scale})`, left: `${(innerWidth - canvasWidth * scale) / 2}px`, top: `${(innerHeight - canvasHeight * scale) / 2}px` });
     } else Object.assign(frame.style, { position: '', width: '', height: '', transformOrigin: '', transform: '', left: '', top: '' });
-    resizeHandle.hidden = mode === 'mobile';
+    for (const handle of resizeHandles) handle.hidden = mode === 'mobile';
   }
   function mountWindowDrag(handle) {
     if (!handle || !geometryKey(shell?.dataset.layout)) return () => {};
@@ -140,32 +178,37 @@ export async function startLivingJapan({ baseUrl, context: suppliedContext, stor
     return () => { for (const [name, listener] of Object.entries(events)) handle.removeEventListener(name, listener); delete handle.dataset.windowDrag; delete handle.dataset.windowDragging; };
   }
   function mountSizeControl() {
-    resizeHandle = document.createElement('button'); resizeHandle.id = 'living-japan-resize'; resizeHandle.type = 'button'; resizeHandle.textContent = '↘';
-    resizeHandle.title = '拖动调整大小；双击恢复适配'; resizeHandle.setAttribute('aria-label', '调整界面大小；方向键调整，回车恢复适配');
-    shellViewport.append(resizeHandle);
-    resizeHandle.addEventListener('pointerdown', event => {
-      if ((event.button != null && event.button !== 0) || !geometryKey(shell.dataset.layout)) return;
-      event.preventDefault(); event.stopPropagation();
-      const box = shellViewport.getBoundingClientRect();
-      sizeDrag = { id: event.pointerId, x: event.clientX, y: event.clientY, height: parseFloat(shell.style.height), left: box.left, top: box.top };
-      resizeHandle.setPointerCapture(event.pointerId);
-    });
-    resizeHandle.addEventListener('pointermove', event => {
-      if (!sizeDrag || sizeDrag.id !== event.pointerId) return;
-      const ratio = shell.dataset.layout === 'portrait' ? 0.5 : 8 / 5;
-      const delta = ((event.clientX - sizeDrag.x) * ratio + event.clientY - sizeDrag.y) / (ratio * ratio + 1);
-      changeGeometry({ x: sizeDrag.left, y: sizeDrag.top, height: sizeDrag.height + delta });
-    });
-    const endSize = event => { if (sizeDrag?.id !== event.pointerId) return; sizeDrag = null; if (resizeHandle.hasPointerCapture?.(event.pointerId)) resizeHandle.releasePointerCapture(event.pointerId); void persistGeometry(); };
-    resizeHandle.addEventListener('pointerup', endSize); resizeHandle.addEventListener('pointercancel', endSize); resizeHandle.addEventListener('lostpointercapture', endSize);
-    const fitSize = () => { geometries[geometryKey(shell.dataset.layout)] = null; sizeFrame(); void persistGeometry(null); };
-    resizeHandle.addEventListener('dblclick', fitSize);
-    resizeHandle.addEventListener('keydown', event => {
-      if (event.key === 'Enter' || event.key === 'Home') { event.preventDefault(); fitSize(); }
-      if (['ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown'].includes(event.key)) {
-        event.preventDefault(); changeGeometry({ ...currentGeometry(), height: parseFloat(shell.style.height) + (['ArrowLeft', 'ArrowUp'].includes(event.key) ? -20 : 20) }); void persistGeometry();
-      }
-    });
+    const fitSize = () => { if (!geometryKey(shell.dataset.layout)) return; geometries[geometryKey(shell.dataset.layout)] = null; sizeFrame(); void persistGeometry(null); };
+    for (const edge of ['right', 'bottom', 'corner']) {
+      const handle = document.createElement('button'); handle.id = `living-japan-resize${edge === 'corner' ? '' : `-${edge}`}`; handle.type = 'button';
+      handle.dataset.resizeEdge = edge;
+      handle.title = '拖动边缘调整大小；双击恢复适配'; handle.setAttribute('aria-label', '调整界面大小；方向键调整，回车恢复适配');
+      shellViewport.append(handle); resizeHandles.push(handle);
+      handle.addEventListener('pointerdown', event => {
+        if ((event.button != null && event.button !== 0) || !geometryKey(shell.dataset.layout)) return;
+        event.preventDefault(); event.stopPropagation();
+        const box = shellViewport.getBoundingClientRect();
+        sizeDrag = { id: event.pointerId, edge, x: event.clientX, y: event.clientY, height: parseFloat(shell.style.height), left: box.left, top: box.top };
+        handle.setPointerCapture(event.pointerId);
+      });
+      handle.addEventListener('pointermove', event => {
+        if (!sizeDrag || sizeDrag.id !== event.pointerId || sizeDrag.edge !== edge) return;
+        const ratio = shell.dataset.layout === 'portrait' ? 0.5 : 8 / 5;
+        const dx = event.clientX - sizeDrag.x, dy = event.clientY - sizeDrag.y;
+        const delta = edge === 'right' ? dx / ratio : edge === 'bottom' ? dy : (dx * ratio + dy) / (ratio * ratio + 1);
+        changeGeometry({ x: sizeDrag.left, y: sizeDrag.top, height: sizeDrag.height + delta });
+      });
+      const endSize = event => { if (sizeDrag?.id !== event.pointerId || sizeDrag.edge !== edge) return; sizeDrag = null; if (handle.hasPointerCapture?.(event.pointerId)) handle.releasePointerCapture(event.pointerId); void persistGeometry(); };
+      handle.addEventListener('pointerup', endSize); handle.addEventListener('pointercancel', endSize); handle.addEventListener('lostpointercapture', endSize);
+      handle.addEventListener('dblclick', fitSize);
+      handle.addEventListener('keydown', event => {
+        if (!geometryKey(shell.dataset.layout)) return;
+        if (event.key === 'Enter' || event.key === 'Home') { event.preventDefault(); fitSize(); }
+        if (['ArrowLeft', 'ArrowUp', 'ArrowRight', 'ArrowDown'].includes(event.key)) {
+          event.preventDefault(); changeGeometry({ ...currentGeometry(), height: parseFloat(shell.style.height) + (['ArrowLeft', 'ArrowUp'].includes(event.key) ? -20 : 20) }); void persistGeometry();
+        }
+      });
+    }
     window.addEventListener('resize', sizeFrame);
     window.visualViewport?.addEventListener('resize', sizeFrame); window.visualViewport?.addEventListener('scroll', sizeFrame);
     if (window.ResizeObserver) {
@@ -209,12 +252,14 @@ export async function startLivingJapan({ baseUrl, context: suppliedContext, stor
     async refresh() { await session.refresh(); emit(); },
     async setLayout(value) {
       if (!['auto', 'desktop', 'portrait', 'mobile'].includes(value)) return false;
+      const preview = Boolean(document.getElementById('previewStatus'));
+      if (isPhone() && !preview) return value === 'auto' || value === 'mobile';
       const view = frame?.contentWindow?.LivingJapanView;
       const prepareLayout = view?.prepareLayoutChange || view?.leave;
       if (prepareLayout && !(await prepareLayout.call(view))) return false;
       await geometrySave;
       await store.update(data => { data.extensionUi = { ...data.extensionUi, layout: value }; return data; });
-      requestedLayout = value; if (shell) renderFrame();
+      requestedLayout = value; previewLayoutOverride = preview && value !== 'auto'; if (shell) renderFrame();
       return true;
     },
     append(name) { return session.engine.appendPlaceNameToChatInput(document, session.engine.outputTextForScript(name,session.engine.normalizeSettings(store.read().livingJapanSettings))); },

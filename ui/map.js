@@ -2,7 +2,6 @@ import { createNationalMap } from '../src/national-map.js';
 import { createPlaceSummary } from './place-summary.js';
 import { mountMapSplitter } from './map-splitter.js';
 import { loadTransitService } from '../src/transit-service.js';
-import { chooseRelatedIntroductions } from '../src/related-place-selection.js';
 import { createSearchResultItem } from '../src/search-result.js';
 import { injectionEndpoints } from '../src/injection-names.js';
 import { navigationCoordinates } from '../src/living-area-map.js';
@@ -16,12 +15,12 @@ const administrative = entity => !entity || ['country', 'prefecture', 'city', 'w
 const coordinates = point => Array.isArray(point) ? { longitude: point[0], latitude: point[1] } : point;
 
 export function createRelatedSelection(load, onChange, onError = () => {}) {
-  let selectedId = null, epoch = 0, rows = [], dead = false;
+  let selectedId = null, selectedRevision, epoch = 0, rows = [], dead = false;
   return {
     rows: () => rows,
-    select(entity) {
-      if (dead || (entity?.id || null) === selectedId) return;
-      selectedId = entity?.id || null; rows = []; const token = ++epoch;
+    select(entity, revision) {
+      if (dead || (entity?.id || null) === selectedId && revision === selectedRevision) return;
+      selectedId = entity?.id || null; selectedRevision = revision; rows = []; const token = ++epoch;
       if (!entity) return;
       Promise.resolve(load(entity)).then(value => { if (!dead && token === epoch) { rows = value; onChange(rows); } }, error => { if (!dead && token === epoch) onError(error); });
     },
@@ -218,14 +217,12 @@ export function mountMap(ui) {
     });
   }
   const relatedSelection = createRelatedSelection(async entity => {
-    const overture = (await catalog.loadIndex?.())?.runtimeSource?.kind === 'overture' || Boolean(entity?.livingAreaRole);
-    const rows = catalog.related ? await catalog.related(entity, overture ? {} : { limit: 7 }) : [];
-    const peers = overture ? rows : chooseRelatedIntroductions(rows);
+    const peers = await catalog.relatedDisplay(entity);
     await bridge.session.ensureSummaries?.([entity, ...peers]);
     return peers;
   }, () => { if (!dead) renderSelection(); }, error => ui.notify(error.message || String(error), 'error'));
   function renderSelection() {
-    const entity = remember(current()); relatedSelection.select(entity);
+    const entity = remember(current()); relatedSelection.select(entity, catalog.relatedDisplayRevision());
     const name = entity?.name || '请选择地点', meta = adminMarkup(entity), peers = relatedSelection.rows().map(remember), preview = summarize(entity, { selected: true });
     $$('[data-map-title]').forEach(node => { node.textContent = name; node.title = entity ? `${name} · 双击追加名称` : ''; });
     if (desktop) {

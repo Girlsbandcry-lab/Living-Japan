@@ -8,7 +8,7 @@ import { deduplicateMapPoints } from './map-point-dedup.js';
 import { presentCatalogEntity } from './place-metadata.js';
 import { createCanonicalPlaces, placeDistanceMeters } from './canonical-places.js';
 import { buildStationNameRules, createStationPresenter } from './station-presentation.js';
-import { chooseRelatedPlaces } from './related-place-selection.js';
+import { chooseRelatedPlaces, chooseRelatedIntroductions } from './related-place-selection.js';
 import { mapLevelPolicy, presentationForRegion } from './map-levels.js';
 import { isRetiredLivingArea } from './living-area-retirement.js';
 import { regionSelectionRelations, applyRegionSelection } from './region-selections.js';
@@ -1017,11 +1017,22 @@ export function createCatalog({ baseData = {}, baseUrl, fetcher = globalThis.fet
     if (!reviewed) for (const target of await run('nearby', source, { radiusMeters, limit: 64 })) add(remember(target), 'nearby', null, 1);
     return chooseRelatedPlaces([...result.values()], max).map(({ priority, ...target }) => target);
   }
+  // LJ-RELATED-CONTAINERS-20261102: UI siblings use current full membership; macro relations retain their original order.
+  async function relatedDisplay(entity) {
+    await loadIndex();
+    const overture = index.runtimeSource?.kind === 'overture' || Boolean(entity?.livingAreaRole);
+    const rows = await related(entity, overture ? {} : { limit: 7 });
+    const peers = overture ? rows : chooseRelatedIntroductions(rows);
+    if (!peers.length || !peers.every(row => row.relationKind === 'same_parent')) return peers;
+    const graph = await getDirectory();
+    const ranked = await Promise.all(peers.map(async row => ({ row, hasChildren: Boolean((await graph.node(row.id))?.hasChildren) })));
+    return ranked.sort((a, b) => Number(b.hasChildren) - Number(a.hasChildren)).map(item => item.row);
+  }
   return { loadIndex, loadRegion, search, startTextSearch, textSearchPage: async (queryId, options) => presentSearchPage(await run('textSearchPage', queryId, options)), textSearchStats: () => run('textSearchStats'),
     startMapSearch, mapSearchPage: async (queryId, options) => presentSearchPage(await run('mapSearchPage', queryId, options)), mapSearchStats: () => run('mapSearchStats'),
     cancelSearch: scope => { searchListeners.delete(scope); return run('cancelSearch', scope, nextSearchVersion(scope)); }, children, browsePage, browseChildren, browseNode, browseParent, browseLocation, browseEntryId, normalizeBrowseState, adminChildren, navigationRoot, navigationChildren, navigationPath, district,
     availability: code => { const spec=[...(index?.views || []),...(index?.regions || [])].find(row=>row.code===String(code)); return {available:spec?.available !== false,packageId:spec?.packageId || index?.regionPackageIds?.[String(code)]}; },
-    get: getEntity, related, setPersonalPlaces, personalIds: () => [...new Set([...personalPlaces.keys(), ...Object.keys(personalState.placeEdits.created)])],
+    get: getEntity, related, relatedDisplay, relatedDisplayRevision: () => supplementVersion, setPersonalPlaces, personalIds: () => [...new Set([...personalPlaces.keys(), ...Object.keys(personalState.placeEdits.created)])],
     async resolveBuiltin(id) { await resolveEntity(id); return builtinEntities.get(canonicalIds.get(id) || id) || null; },
     resolve: resolveEntity, resolveLight: async id => Object.hasOwn(personalState.placeEdits.created, id) ? resolveEntity(id) : remember(await run('canonicalResolveLight', id)),
     resolveLights: async ids => (await Promise.all(ids.map(id => Object.hasOwn(personalState.placeEdits.created, id) ? resolveEntity(id) : run('canonicalResolveLight', id).then(remember)))).filter(Boolean),
