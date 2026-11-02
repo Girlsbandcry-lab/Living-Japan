@@ -1,5 +1,5 @@
-// LJ-NARROW-MAP-SPLITTER-20261030: resize the normal map above two visible related items, in session only.
-export function mountMapSplitter({ page, map, feed, related, route, state, layout }) {
+// LJ-NARROW-MAP-SPLITTER-20261030: resize the normal map above two visible related items.
+export function mountMapSplitter({ page, map, feed, related, route, state, layout, onCommit = () => {} }) {
   const document = page.ownerDocument, view = document.defaultView;
   const handle = document.createElement('div'), originalGrid = page.style.gridTemplateRows;
   handle.className = 'lj-map-splitter'; handle.tabIndex = 0;
@@ -32,8 +32,9 @@ export function mountMapSplitter({ page, map, feed, related, route, state, layou
     height = Math.max(limits.min, Math.min(limits.max, height));
     const grid = `${height}px minmax(0,1fr) auto`;
     if (page.style.gridTemplateRows !== grid) page.style.gridTemplateRows = grid;
-    if (remember) state[layout] = height;
+    if (remember && Math.abs(height - limits.height) > .01) state[layout] = height;
     position(limits);
+    return height;
   }
   function refresh() {
     if (dead) return;
@@ -45,23 +46,30 @@ export function mountMapSplitter({ page, map, feed, related, route, state, layou
     if (event.button !== 0 || event.isPrimary === false) return;
     const limits = measure(); if (!limits) return;
     event.preventDefault(); event.stopPropagation(); handle.focus({ preventScroll: true });
-    drag = { id: event.pointerId, y: event.clientY, height: limits.height, scale: limits.scale };
+    drag = { id: event.pointerId, y: event.clientY, height: limits.height, lastHeight: limits.height, preferred: state[layout], scale: limits.scale };
     handle.setPointerCapture(event.pointerId); page.classList.add('lj-map-split-dragging');
   }
   function move(event) {
     if (!drag || drag.id !== event.pointerId) return;
-    event.preventDefault(); apply(drag.height + (event.clientY - drag.y) / drag.scale);
+    event.preventDefault();
+    const height = apply(drag.height + (event.clientY - drag.y) / drag.scale);
+    if (height !== undefined) drag.lastHeight = height;
   }
   function end(event) {
     if (!drag || drag.id !== event.pointerId) return;
-    const id = drag.id; drag = null; page.classList.remove('lj-map-split-dragging');
-    if (handle.hasPointerCapture(id)) handle.releasePointerCapture(id);
+    const finished = drag; drag = null; page.classList.remove('lj-map-split-dragging');
+    if (handle.hasPointerCapture(finished.id)) handle.releasePointerCapture(finished.id);
+    if (Math.abs(finished.lastHeight - finished.height) > .01) onCommit(state[layout]);
+    else if (finished.preferred === undefined) delete state[layout];
+    else state[layout] = finished.preferred;
   }
   function key(event) {
     const limits = measure(); if (!limits) return;
     const height = { ArrowUp: limits.height - 24, ArrowDown: limits.height + 24, Home: limits.min, End: limits.max }[event.key];
     if (height === undefined) return;
-    event.preventDefault(); event.stopPropagation(); apply(height);
+    event.preventDefault(); event.stopPropagation();
+    const applied = apply(height);
+    if (applied !== undefined && Math.abs(applied - limits.height) > .01) onCommit(state[layout]);
   }
   const events = { pointerdown: down, pointermove: move, pointerup: end, pointercancel: end, lostpointercapture: end, keydown: key };
   for (const [name, listener] of Object.entries(events)) handle.addEventListener(name, listener);
