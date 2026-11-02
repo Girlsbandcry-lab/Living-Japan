@@ -1,0 +1,19 @@
+.preview-user/
+.local/
+/资料源/
+node_modules/
+__pycache__/
+*.log
+tests/artifacts/
+docs/实施计划_20261029.md
+docs/本轮小本本.md
+docs/*小本本_20261029.md
+docs/引擎迁移记录.md
+
+# Local administrative workflow state; shared rules and Markdown masters remain visible.
+/工程表/行政区重建/共用/调度状态.*
+/工程表/行政区重建/共用/调度历史/
+/工程表/行政区重建/整区/地区/
+/工程表/行政区重建/整区/档案/**/.baseline/
+/工程表/行政区重建/整区/档案/**/.history/
+/工程表/行政区重建/整区/档案/**/.batch-state*

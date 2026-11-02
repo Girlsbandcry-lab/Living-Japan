@@ -1,0 +1,62 @@
+[
+  {
+    "file": "lucide-cake-slice.svg",
+    "url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/cake-slice.svg",
+    "sha256": "c390127e7b3297f0f2340f8ff8dbb9d410094abdd10388b2dd0eff3bd998c0e4",
+    "conversion": "Original path data; SVG circle elements converted to equivalent circular arcs."
+  },
+  {
+    "file": "lucide-guitar.svg",
+    "url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/guitar.svg",
+    "sha256": "ca2026598763ff4c8991912524f8050326e24307ea241ea2a0735af529f7e67f",
+    "conversion": "Original path data; SVG circle elements converted to equivalent circular arcs."
+  },
+  {
+    "file": "lucide-watch.svg",
+    "url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/watch.svg",
+    "sha256": "2a5b263eb6a1d45e5f2b99e07a31950fcbf16c6003c9c3f831db9fc4703afc7a",
+    "conversion": "Original path data; SVG circle elements converted to equivalent circular arcs."
+  },
+  {
+    "file": "lucide-mic-vocal.svg",
+    "url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/mic-vocal.svg",
+    "sha256": "571cafe82376ae0950eab5a709c3c9195aa466c9043462ea83f26e125e027d47",
+    "conversion": "Original path data; SVG circle elements converted to equivalent circular arcs."
+  },
+  {
+    "file": "tabler-bowling.svg",
+    "url": "https://raw.githubusercontent.com/tabler/tabler-icons/main/icons/outline/bowling.svg",
+    "sha256": "2dd6ef0c2c9c4584d1e926746039948bc77108228f23253e20d472f79968f42f",
+    "conversion": "Original path data; SVG circle elements converted to equivalent circular arcs."
+  },
+  {
+    "file": "maki-playground.svg",
+    "url": "https://raw.githubusercontent.com/mapbox/maki/main/icons/playground.svg",
+    "sha256": "7e161c0e9fe7fed13220beb4194ed77cddc8b498304b923ba805dd16527a9e4c",
+    "conversion": "Original path data; SVG circle elements converted to equivalent circular arcs."
+  },
+  {
+    "file": "lucide-book-open-text.svg",
+    "url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/book-open-text.svg",
+    "sha256": "a73c44b3e7586317a1766b529e345a2c94cdd70d838a61c7b05432737b81eb7f",
+    "conversion": "Original path data; SVG circle elements converted to equivalent circular arcs."
+  },
+  {
+    "file": "lucide-atom.svg",
+    "url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/atom.svg",
+    "sha256": "9ac2f48402368cb4e4db5c59371698a86f35598c8b8076411bfdfdd63550ffd8",
+    "conversion": "Original path data; SVG circle elements converted to equivalent circular arcs."
+  },
+  {
+    "file": "lucide-telescope.svg",
+    "url": "https://raw.githubusercontent.com/lucide-icons/lucide/main/icons/telescope.svg",
+    "sha256": "ef9c953964649dd84764478de5396aaab3c924927e522a74f4ccfdeef381b023",
+    "conversion": "Original path data; SVG circle elements converted to equivalent circular arcs."
+  },
+  {
+    "file": "mdi-elephant.svg",
+    "url": "https://raw.githubusercontent.com/Templarian/MaterialDesign-SVG/master/svg/elephant.svg",
+    "sha256": "522f0437f26903a30f74172f96b7fec78c8aebbf1f75dd51474256dfb1637e52",
+    "conversion": "Original path data; SVG circle elements converted to equivalent circular arcs."
+  }
+]

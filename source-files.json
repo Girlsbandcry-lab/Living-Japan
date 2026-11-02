@@ -1,0 +1,1036 @@
+{
+  "schemaVersion": 1,
+  "candidate": "source-v20261102",
+  "publicationState": "published_current_only_default_install_verified",
+  "files": [
+    {
+      "path": ".agents/skills/living-japan-district-workflow/SKILL.md",
+      "origin": ".agents/skills/living-japan-district-workflow/SKILL.md",
+      "mode": "copied",
+      "bytes": 11437,
+      "sha256": "aa47f8cf1c7276a365bfba33148b7f9d4f7e0bc698f3e55ffd3db6c8ad4bbcc0"
+    },
+    {
+      "path": ".gitattributes",
+      "origin": ".gitattributes",
+      "mode": "copied",
+      "bytes": 31,
+      "sha256": "af3bc1614b0ae4f848105f7c947f09fad9829052b28e88f6e7d3eb477c57ab95"
+    },
+    {
+      "path": ".github/CODEOWNERS",
+      "origin": "github-kit/.github/CODEOWNERS",
+      "mode": "generated",
+      "bytes": 236,
+      "sha256": "195b5a1a4257c9a967c1c2ce1bf5725a317a396620899ebc70ac12ca3a565f12"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/bug_report.yml",
+      "origin": "github-kit/.github/ISSUE_TEMPLATE/bug_report.yml",
+      "mode": "generated",
+      "bytes": 1774,
+      "sha256": "17baeb6873a7d969f7ab6ef9b5c64f45602296d8535cddd39a75f51a39eca3ef"
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/data_return.yml",
+      "origin": "github-kit/.github/ISSUE_TEMPLATE/data_return.yml",
+      "mode": "generated",
+      "bytes": 2088,
+      "sha256": "417c1a856dc6a5018dff94aba7b34d6c8a3accd225a6764e8cdaddc3c0cb963e"
+    },
+    {
+      "path": ".github/pull_request_template.md",
+      "origin": "github-kit/.github/pull_request_template.md",
+      "mode": "generated",
+      "bytes": 952,
+      "sha256": "04846cf9556ee21611720cbe252529d0de1ed0764fbd663061407206533e3f09"
+    },
+    {
+      "path": ".gitignore",
+      "origin": ".gitignore",
+      "mode": "copied",
+      "bytes": 609,
+      "sha256": "3b84aad3962c1b75ae22aa6e068efe18191de7ab07b99c1b98ca066077a7c807"
+    },
+    {
+      "path": "AGENTS.md",
+      "origin": "AGENTS.md",
+      "mode": "copied",
+      "bytes": 5677,
+      "sha256": "7e5e180f038e4be769589f11d312263872bd87de58de25741b2277b8e25ec6e3"
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "origin": "github-kit/CONTRIBUTING.md; current scope",
+      "mode": "generated",
+      "bytes": 4004,
+      "sha256": "c6ab01b2f64eb1ddf247328d8cbedfd8480b9a466db3c1fe0b666be235b2f04d"
+    },
+    {
+      "path": "PROJECT_TODO.md",
+      "origin": "PROJECT_TODO.md; public evidence links only",
+      "mode": "generated",
+      "bytes": 3859,
+      "sha256": "712be1285596a0e8d2f4938463933268653faabc922c1ac68821c11ffba05002"
+    },
+    {
+      "path": "README.md",
+      "origin": "README.md; source-role guidance",
+      "mode": "generated",
+      "bytes": 5034,
+      "sha256": "d0e69644faad421f75d2b252951654659c4113d55b3cf3badacdb16d5ff51a8c"
+    },
+    {
+      "path": "assets/map-icons/Apache-2.0.txt",
+      "origin": "assets/map-icons/Apache-2.0.txt",
+      "mode": "copied",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    {
+      "path": "assets/map-icons/lucide-LICENSE.txt",
+      "origin": "assets/map-icons/lucide-LICENSE.txt",
+      "mode": "copied",
+      "bytes": 3208,
+      "sha256": "b495047bd93a9b06913511076f504daba17d5bbeb3e0650f3bb53a4220329c57"
+    },
+    {
+      "path": "assets/map-icons/lucide-atom.svg",
+      "origin": "assets/map-icons/lucide-atom.svg",
+      "mode": "copied",
+      "bytes": 523,
+      "sha256": "9ac2f48402368cb4e4db5c59371698a86f35598c8b8076411bfdfdd63550ffd8"
+    },
+    {
+      "path": "assets/map-icons/lucide-book-open-text.svg",
+      "origin": "assets/map-icons/lucide-book-open-text.svg",
+      "mode": "copied",
+      "bytes": 479,
+      "sha256": "a73c44b3e7586317a1766b529e345a2c94cdd70d838a61c7b05432737b81eb7f"
+    },
+    {
+      "path": "assets/map-icons/lucide-cake-slice.svg",
+      "origin": "assets/map-icons/lucide-cake-slice.svg",
+      "mode": "copied",
+      "bytes": 437,
+      "sha256": "c390127e7b3297f0f2340f8ff8dbb9d410094abdd10388b2dd0eff3bd998c0e4"
+    },
+    {
+      "path": "assets/map-icons/lucide-guitar.svg",
+      "origin": "assets/map-icons/lucide-guitar.svg",
+      "mode": "copied",
+      "bytes": 605,
+      "sha256": "ca2026598763ff4c8991912524f8050326e24307ea241ea2a0735af529f7e67f"
+    },
+    {
+      "path": "assets/map-icons/lucide-mic-vocal.svg",
+      "origin": "assets/map-icons/lucide-mic-vocal.svg",
+      "mode": "copied",
+      "bytes": 445,
+      "sha256": "571cafe82376ae0950eab5a709c3c9195aa466c9043462ea83f26e125e027d47"
+    },
+    {
+      "path": "assets/map-icons/lucide-telescope.svg",
+      "origin": "assets/map-icons/lucide-telescope.svg",
+      "mode": "copied",
+      "bytes": 650,
+      "sha256": "ef9c953964649dd84764478de5396aaab3c924927e522a74f4ccfdeef381b023"
+    },
+    {
+      "path": "assets/map-icons/lucide-watch.svg",
+      "origin": "assets/map-icons/lucide-watch.svg",
+      "mode": "copied",
+      "bytes": 440,
+      "sha256": "2a5b263eb6a1d45e5f2b99e07a31950fcbf16c6003c9c3f831db9fc4703afc7a"
+    },
+    {
+      "path": "assets/map-icons/maki-LICENSE.txt",
+      "origin": "assets/map-icons/maki-LICENSE.txt",
+      "mode": "copied",
+      "bytes": 6555,
+      "sha256": "36ffd9dc085d529a7e60e1276d73ae5a030b020313e6c5408593a6ae2af39673"
+    },
+    {
+      "path": "assets/map-icons/maki-playground.svg",
+      "origin": "assets/map-icons/maki-playground.svg",
+      "mode": "copied",
+      "bytes": 1055,
+      "sha256": "7e161c0e9fe7fed13220beb4194ed77cddc8b498304b923ba805dd16527a9e4c"
+    },
+    {
+      "path": "assets/map-icons/mdi-LICENSE.txt",
+      "origin": "assets/map-icons/mdi-LICENSE.txt",
+      "mode": "copied",
+      "bytes": 1012,
+      "sha256": "f3bc8715bad84b26396bb42d2abd11f919cf58163be158eab79ecbaabf84cdf2"
+    },
+    {
+      "path": "assets/map-icons/mdi-elephant.svg",
+      "origin": "assets/map-icons/mdi-elephant.svg",
+      "mode": "copied",
+      "bytes": 311,
+      "sha256": "522f0437f26903a30f74172f96b7fec78c8aebbf1f75dd51474256dfb1637e52"
+    },
+    {
+      "path": "assets/map-icons/sources.json",
+      "origin": "assets/map-icons/sources.json",
+      "mode": "copied",
+      "bytes": 3244,
+      "sha256": "60df9cf4495096d20e75d0600c17d602b3c5431f2a9ac423041ef71fc5c2045a"
+    },
+    {
+      "path": "assets/map-icons/tabler-LICENSE.txt",
+      "origin": "assets/map-icons/tabler-LICENSE.txt",
+      "mode": "copied",
+      "bytes": 1073,
+      "sha256": "b740a1d46122672da62833e97f7e7c8a13fa85cbc7445b584b297cc00dde93db"
+    },
+    {
+      "path": "assets/map-icons/tabler-bowling.svg",
+      "origin": "assets/map-icons/tabler-bowling.svg",
+      "mode": "copied",
+      "bytes": 644,
+      "sha256": "2dd6ef0c2c9c4584d1e926746039948bc77108228f23253e20d472f79968f42f"
+    },
+    {
+      "path": "data/empty-runtime.json",
+      "origin": "distribution-v20261102/framework/data/empty-runtime.json",
+      "mode": "copied",
+      "bytes": 1496187,
+      "sha256": "045abe85df353ccfe2e389ace3c67fa4f643a70a9aa4fab14f334274f0fcd132"
+    },
+    {
+      "path": "data/region-framework.json",
+      "origin": "distribution-v20261102/framework/data/region-framework.json",
+      "mode": "copied",
+      "bytes": 783278,
+      "sha256": "aa8ae65524b624b045926d4155c3967264a81f3d8e7dc18e29719660cc644b49"
+    },
+    {
+      "path": "data/region-pack-source.json",
+      "origin": "generated; source is not an install branch",
+      "mode": "generated",
+      "bytes": 36,
+      "sha256": "8de9b64fc5965c89ce944644aa5b49612dae4ac61b3006b2503292636f212679"
+    },
+    {
+      "path": "docs/安装与恢复.md",
+      "origin": "docs/安装与恢复.md",
+      "mode": "copied",
+      "bytes": 4456,
+      "sha256": "e5b0924ecff9dca64330145edbe9d689e1111b00777966bf05ae6f6cea0b6c8d"
+    },
+    {
+      "path": "docs/来源与许可证.md",
+      "origin": "generated",
+      "mode": "generated",
+      "bytes": 942,
+      "sha256": "7a3ad625ccc0fbedd86eee05be76d476211228d43b4c5f38448651abaa5d3cc2"
+    },
+    {
+      "path": "docs/源码协作与构建.md",
+      "origin": "generated scope; dependency boundaries",
+      "mode": "generated",
+      "bytes": 3941,
+      "sha256": "6fc12eca26b9900b9adc9dd79376671bfe9992caaec3b5ce87c265ec93e4c9e4"
+    },
+    {
+      "path": "docs/验证说明.md",
+      "origin": "generated; scoped verification",
+      "mode": "generated",
+      "bytes": 5679,
+      "sha256": "0276391f1807fdd10289fe3116561cf3ff1458c928f1228f791fe62cc7313f0a"
+    },
+    {
+      "path": "index.js",
+      "origin": "index.js",
+      "mode": "copied",
+      "bytes": 530,
+      "sha256": "0ba392a0994b5b39f95ddefbb55f04d4dfb40b1749b0fd87bd5efe8cc20f3798"
+    },
+    {
+      "path": "manifest.json",
+      "origin": "manifest.json",
+      "mode": "copied",
+      "bytes": 280,
+      "sha256": "c149c3295ab7974781dcff8e03b8800832b7e460609138ab532c9f510b20ded8"
+    },
+    {
+      "path": "package.json",
+      "origin": "package.json; public subset commands",
+      "mode": "generated",
+      "bytes": 281,
+      "sha256": "e519c236984a691e3d5ee7f79e86f957aa543f1da7bc2bfd55b5b434442b50ca"
+    },
+    {
+      "path": "scripts/build-region-distribution.py",
+      "origin": "scripts/build-region-distribution.py",
+      "mode": "copied",
+      "bytes": 31067,
+      "sha256": "cec07a7ade1544ff8c583c26ba44b0ac4b338a65040af53d360a5d624275ca43"
+    },
+    {
+      "path": "scripts/package-preview.html",
+      "origin": "scripts/package-preview.html",
+      "mode": "copied",
+      "bytes": 1966,
+      "sha256": "ea697cc5493912978d6fec19a3704ecb4e18cfa43175045bc1c667fb9bc6d7c7"
+    },
+    {
+      "path": "scripts/preview-host.js",
+      "origin": "scripts/preview-host.js",
+      "mode": "copied",
+      "bytes": 2013,
+      "sha256": "bb264f8f93bcbcf99f0d7264fe31678ac17945856433391185eecf997ea6ce6b"
+    },
+    {
+      "path": "scripts/serve-package-preview.mjs",
+      "origin": "scripts/serve-package-preview.mjs",
+      "mode": "copied",
+      "bytes": 4040,
+      "sha256": "832fdaf7f3eff8e8410a5b78ae61bbf4ab94670e371ff0e5fba26c7374e1f064"
+    },
+    {
+      "path": "scripts/test-region-distribution.py",
+      "origin": "scripts/test-region-distribution.py",
+      "mode": "copied",
+      "bytes": 18402,
+      "sha256": "7277274ce99f2333b35ab9e8defdf6bebbcfc8ddcf66c956b2acab40bfc3d489"
+    },
+    {
+      "path": "src/app.js",
+      "origin": "src/app.js",
+      "mode": "copied",
+      "bytes": 12802,
+      "sha256": "2c38548c45557787ec3a0d593b835cf9bd34120079dd25166e836431a29961f2"
+    },
+    {
+      "path": "src/baseline.js",
+      "origin": "src/baseline.js",
+      "mode": "copied",
+      "bytes": 9619,
+      "sha256": "574d9d7439cb49d7382e8794091019e8c1964bc70cfafbae7d5fffcb28c77a94"
+    },
+    {
+      "path": "src/bootstrap.js",
+      "origin": "src/bootstrap.js",
+      "mode": "copied",
+      "bytes": 4666,
+      "sha256": "d503c089ebcd083395da812e7dc8e174aaf29dc5f17ccc3fab0dc3a1065dc96b"
+    },
+    {
+      "path": "src/browse-history.js",
+      "origin": "src/browse-history.js",
+      "mode": "copied",
+      "bytes": 707,
+      "sha256": "17b314be10ddaa8272af50d9cc4db5f334710a7cede65055e8228e210425b689"
+    },
+    {
+      "path": "src/canonical-places.js",
+      "origin": "src/canonical-places.js",
+      "mode": "copied",
+      "bytes": 30666,
+      "sha256": "6d5f5f6c8cfebf75560cac1f3a4fb4aadfaae1ec8b09dda84f5cb7c851996de6"
+    },
+    {
+      "path": "src/catalog.js",
+      "origin": "src/catalog.js",
+      "mode": "copied",
+      "bytes": 82226,
+      "sha256": "4461cc5304fed7578768fa55e06d86200ffbea1c248afeff88fdaf02bf68c652"
+    },
+    {
+      "path": "src/chain-place-names.js",
+      "origin": "src/chain-place-names.js",
+      "mode": "copied",
+      "bytes": 1212,
+      "sha256": "bc3d6cbdb07ca88e8a1b335fc21495876935f890cf6f97b21ef22e0746703ce5"
+    },
+    {
+      "path": "src/facility-groups.js",
+      "origin": "src/facility-groups.js",
+      "mode": "copied",
+      "bytes": 3111,
+      "sha256": "1a0be22f4d51d37269d4fce159ceafd545f8b95a3cf6147b9f32c7ce8dcf6be9"
+    },
+    {
+      "path": "src/floating-entry.css",
+      "origin": "src/floating-entry.css",
+      "mode": "copied",
+      "bytes": 6049,
+      "sha256": "f15afb04074a9adffa12f7595564ff173a60c63c1747ef649d2f1eda1d751378"
+    },
+    {
+      "path": "src/floating-entry.js",
+      "origin": "src/floating-entry.js",
+      "mode": "copied",
+      "bytes": 16902,
+      "sha256": "dcc0e52f5767af0d8547dc412b7ee74c876c88b168d7c317011e4684c205226f"
+    },
+    {
+      "path": "src/geographic-directory.js",
+      "origin": "src/geographic-directory.js",
+      "mode": "copied",
+      "bytes": 10648,
+      "sha256": "e778a480091d11828043499edaf66686f006ec1dffe08f989b0b412b16c6d6cf"
+    },
+    {
+      "path": "src/host-entries.js",
+      "origin": "src/host-entries.js",
+      "mode": "copied",
+      "bytes": 3407,
+      "sha256": "750f0faad01fb2a2d50622a0547a464ed1eec7571ea639ec0df7123be03f7011"
+    },
+    {
+      "path": "src/injection-names.js",
+      "origin": "src/injection-names.js",
+      "mode": "copied",
+      "bytes": 3357,
+      "sha256": "56887df2568d7382e703747668e62652e70691ea8bc5cc6ca23a0178bebc7ed5"
+    },
+    {
+      "path": "src/legacy/engine.js",
+      "origin": "src/legacy/engine.js",
+      "mode": "copied",
+      "bytes": 164433,
+      "sha256": "9d9067db2f7e98cc4532fb7c8348b6b627a04165c37d5481e1e175b80393d2db"
+    },
+    {
+      "path": "src/legacy/text-script.js",
+      "origin": "src/legacy/text-script.js",
+      "mode": "copied",
+      "bytes": 7790,
+      "sha256": "2b7f99274729d9fd662faa8669c6d8f220e7faf371d2e3aa6c11e702d5412d38"
+    },
+    {
+      "path": "src/legacy/transit-map.css",
+      "origin": "src/legacy/transit-map.css",
+      "mode": "copied",
+      "bytes": 40007,
+      "sha256": "7aa30b61cc148e9afd1a2434e754133e803e3d3ec2768ba118b3a5c75f451ea8"
+    },
+    {
+      "path": "src/legacy/transit-map.js",
+      "origin": "src/legacy/transit-map.js",
+      "mode": "copied",
+      "bytes": 160741,
+      "sha256": "270e16f6b9910bf6f5345d4bdaebbefe628df4a9c81910967cf7cb690a466073"
+    },
+    {
+      "path": "src/legacy/transit-time.js",
+      "origin": "src/legacy/transit-time.js",
+      "mode": "copied",
+      "bytes": 47215,
+      "sha256": "2b2dfbe0a56dfff534471e0ae8d3f69cecf2f4640841e70d7eefc230d5f40ee4"
+    },
+    {
+      "path": "src/living-area-expansion.js",
+      "origin": "src/living-area-expansion.js",
+      "mode": "copied",
+      "bytes": 7575,
+      "sha256": "ee49b79b060b19c72eae9e29c8df05e3567d73774e576a4b9156dac4922cbe19"
+    },
+    {
+      "path": "src/living-area-map.js",
+      "origin": "src/living-area-map.js",
+      "mode": "copied",
+      "bytes": 1040,
+      "sha256": "c2c65f7948396e11204595c9ac9bf94f070ccef075186d12153a1d62cb9bd701"
+    },
+    {
+      "path": "src/living-area-retirement.js",
+      "origin": "src/living-area-retirement.js",
+      "mode": "copied",
+      "bytes": 11625,
+      "sha256": "862fe26bdb4b42598a7423998d1fbb84bc72c4412c271cb2092350cd8afd8bfa"
+    },
+    {
+      "path": "src/map-levels.js",
+      "origin": "src/map-levels.js",
+      "mode": "copied",
+      "bytes": 1437,
+      "sha256": "aa98a7af669ee3cbdea9bc15bed75739fc5132bcfd30304dfd58c7441a20b638"
+    },
+    {
+      "path": "src/map-palette.js",
+      "origin": "src/map-palette.js",
+      "mode": "copied",
+      "bytes": 1391,
+      "sha256": "748c169f780d468f3b0d5f7ec728c4a719fc06f9e7589f0323eb18c059bdeeb6"
+    },
+    {
+      "path": "src/map-point-categories.js",
+      "origin": "src/map-point-categories.js",
+      "mode": "copied",
+      "bytes": 6750,
+      "sha256": "aaf869b2b53be5fce8c0458f14021fb2317f005028bb0467f1f7b662f023caad"
+    },
+    {
+      "path": "src/map-point-dedup.js",
+      "origin": "src/map-point-dedup.js",
+      "mode": "copied",
+      "bytes": 2748,
+      "sha256": "73be5db7cb6af900d50eb933887cd3089acb360376ba4b78344e2f50c2023e5d"
+    },
+    {
+      "path": "src/map-point-icon-details.js",
+      "origin": "src/map-point-icon-details.js",
+      "mode": "copied",
+      "bytes": 42901,
+      "sha256": "0581d467c5f27e3e8e8383c7ca1fa9952bfe0319b7c21a9e017fe67f02662676"
+    },
+    {
+      "path": "src/map-point-icon-semantics.js",
+      "origin": "src/map-point-icon-semantics.js",
+      "mode": "copied",
+      "bytes": 17321,
+      "sha256": "c1296c0bdd1590dce964d404700582d7c26b45f9606fd8f4de4b8f2cd3e53386"
+    },
+    {
+      "path": "src/map-point-icon-vectors.js",
+      "origin": "src/map-point-icon-vectors.js",
+      "mode": "copied",
+      "bytes": 5211,
+      "sha256": "7247aa02ac37084290c4c7095d8a997c02dcab64825cabfe860d9f66d7e2a433"
+    },
+    {
+      "path": "src/map-point-icons.js",
+      "origin": "src/map-point-icons.js",
+      "mode": "copied",
+      "bytes": 32965,
+      "sha256": "9665f76344e4fa14af67ec5dd4fcd673a5a75708f24a31375edcf679778c06c1"
+    },
+    {
+      "path": "src/map-search-session.js",
+      "origin": "src/map-search-session.js",
+      "mode": "copied",
+      "bytes": 10351,
+      "sha256": "e01749781caddcc21d55af2ad36df02866efb9850c9d35a715c33e1a51f9def5"
+    },
+    {
+      "path": "src/material-catalog.js",
+      "origin": "src/material-catalog.js",
+      "mode": "copied",
+      "bytes": 24417,
+      "sha256": "4d700fe612f38516c0ce103cebfa94b76fd4116032c57ed0c9faf851ca30d77b"
+    },
+    {
+      "path": "src/material-library.js",
+      "origin": "src/material-library.js",
+      "mode": "copied",
+      "bytes": 17076,
+      "sha256": "59a9462d25590dd13b98d472ef5af13e52563c97e6b65b0e064525d9f0044008"
+    },
+    {
+      "path": "src/metro-names.js",
+      "origin": "src/metro-names.js",
+      "mode": "copied",
+      "bytes": 1949,
+      "sha256": "dff61d354d6e0978d8e64bcd76fe25d4dd72b3311108149fc5dad61a7f8eb4be"
+    },
+    {
+      "path": "src/metro-point-categories.js",
+      "origin": "src/metro-point-categories.js",
+      "mode": "copied",
+      "bytes": 4861,
+      "sha256": "1bfd5258dca8540f60bbda5c92d7e3ba7af43fbe4f666a06458b9fe5a7fae84d"
+    },
+    {
+      "path": "src/metro-purpose-catalog.js",
+      "origin": "src/metro-purpose-catalog.js",
+      "mode": "copied",
+      "bytes": 72545,
+      "sha256": "38c5816297adbcfb8e1635db174c475250c27f667ee5639f72535d84c313de20"
+    },
+    {
+      "path": "src/metro-purpose-presentation.js",
+      "origin": "src/metro-purpose-presentation.js",
+      "mode": "copied",
+      "bytes": 1103,
+      "sha256": "b6ec5b5c1639126761c8921d016c3e198d69c774d76188bd376f87a8972fc632"
+    },
+    {
+      "path": "src/national-map.js",
+      "origin": "src/national-map.js",
+      "mode": "copied",
+      "bytes": 40102,
+      "sha256": "9c85a33ff78d03f528f5ed7f436664376f7c280549429c68baad67573c8b8098"
+    },
+    {
+      "path": "src/national-worker.js",
+      "origin": "src/national-worker.js",
+      "mode": "copied",
+      "bytes": 932,
+      "sha256": "f7b6becd8a44ae5ad096edcf43826f6b71d572c876e0970a461d31539adc866f"
+    },
+    {
+      "path": "src/place-display-representatives.js",
+      "origin": "src/place-display-representatives.js",
+      "mode": "copied",
+      "bytes": 10465,
+      "sha256": "59c97f7e83a373ac9d455b2ea97a315ec73a9c00d533e45481608fe918da5661"
+    },
+    {
+      "path": "src/place-identities.js",
+      "origin": "src/place-identities.js",
+      "mode": "copied",
+      "bytes": 13235,
+      "sha256": "8ac60f44dd3855f67a81ea2f93d7564ca5e1a168cf0c051efbf7ccb56b5ea02b"
+    },
+    {
+      "path": "src/place-identity-overrides.js",
+      "origin": "src/place-identity-overrides.js",
+      "mode": "copied",
+      "bytes": 3973,
+      "sha256": "ddcd1198f91dd4e5582de04fdcb52251e15caff1751c1259a730575e81766be5"
+    },
+    {
+      "path": "src/place-metadata.js",
+      "origin": "src/place-metadata.js",
+      "mode": "copied",
+      "bytes": 7348,
+      "sha256": "d7a7ad811df035ed2c36605c07c2aa86ff5e14b475df62ac857e934bd50b42b9"
+    },
+    {
+      "path": "src/region-pack-manager.js",
+      "origin": "src/region-pack-manager.js",
+      "mode": "copied",
+      "bytes": 22240,
+      "sha256": "50d0e470a0e5d9e08430c48e339661b268a13e85af1db76f8e310fdf199c1275"
+    },
+    {
+      "path": "src/region-pack-panel.css",
+      "origin": "src/region-pack-panel.css",
+      "mode": "copied",
+      "bytes": 7629,
+      "sha256": "7ca5a44f2a77d8b8fd64d5f2aa6570c8408aba085e17e32cd7c4faaa02b4d048"
+    },
+    {
+      "path": "src/region-pack-panel.js",
+      "origin": "src/region-pack-panel.js",
+      "mode": "copied",
+      "bytes": 17593,
+      "sha256": "35cc875c352730c9d4d8becd070f90bc078c0eadeaca37d8fb47f62105d9aae3"
+    },
+    {
+      "path": "src/region-pack-resources.js",
+      "origin": "src/region-pack-resources.js",
+      "mode": "copied",
+      "bytes": 6478,
+      "sha256": "5d267511b3cdbd3b4792d4afc809db46cd7bd3b498e1b1614f1af0e1bb44259f"
+    },
+    {
+      "path": "src/region-pack-runtime.js",
+      "origin": "src/region-pack-runtime.js",
+      "mode": "copied",
+      "bytes": 5435,
+      "sha256": "2e5a03df548231bdfb8013ebbf852d85d03a33962a61ed24e238952c3a22fcde"
+    },
+    {
+      "path": "src/region-selections.js",
+      "origin": "src/region-selections.js",
+      "mode": "copied",
+      "bytes": 2101,
+      "sha256": "ab36e35649861ff4e7b2872ac25c1c040b7e91a12f6f0c9cf19816ed74cd0b0c"
+    },
+    {
+      "path": "src/related-place-selection.js",
+      "origin": "src/related-place-selection.js",
+      "mode": "copied",
+      "bytes": 2668,
+      "sha256": "3a5d895b3c9d6abd49d9b2ee2152e217a82a7c95c1a93a5b4870112880e0f3ef"
+    },
+    {
+      "path": "src/reviewed-display-additions.js",
+      "origin": "src/reviewed-display-additions.js",
+      "mode": "copied",
+      "bytes": 43778,
+      "sha256": "b2d3fdb01d00a64d2decd1e6d0a7b92103cffc2fbd1b95521c8ebdc89b3ff66a"
+    },
+    {
+      "path": "src/reviewed-landmark-corrections.js",
+      "origin": "src/reviewed-landmark-corrections.js",
+      "mode": "copied",
+      "bytes": 11070,
+      "sha256": "0d210148670e75c1372c7a831cb38d9b77649245bebb21de235b043283dbbd1f"
+    },
+    {
+      "path": "src/reviewed-region-identities.js",
+      "origin": "src/reviewed-region-identities.js",
+      "mode": "copied",
+      "bytes": 8498,
+      "sha256": "840900a086e6187f527b01fe185ce4c1744a9072b0e92189fcdbce354391bbb1"
+    },
+    {
+      "path": "src/search-glyphs.js",
+      "origin": "src/search-glyphs.js",
+      "mode": "copied",
+      "bytes": 66000,
+      "sha256": "b6bb56f50d12f7ca4935d23005735318577a0e66982f16e84c537144999fdd60"
+    },
+    {
+      "path": "src/search-result.js",
+      "origin": "src/search-result.js",
+      "mode": "copied",
+      "bytes": 968,
+      "sha256": "60382cceda6d5edbe7d04834b4e07be1e5e19716910671c4a18c6022b666a70a"
+    },
+    {
+      "path": "src/search-text.js",
+      "origin": "src/search-text.js",
+      "mode": "copied",
+      "bytes": 1604,
+      "sha256": "9955d6ef9205ba965c45238d9a8917b6fad0b16fa2024d8cd8a4b9dce9af8ae9"
+    },
+    {
+      "path": "src/session.js",
+      "origin": "src/session.js",
+      "mode": "copied",
+      "bytes": 13985,
+      "sha256": "7a1228060e7c78015a95b034be9f97d7a82a6a8965edf6ac58a010df5da30b78"
+    },
+    {
+      "path": "src/station-presentation.js",
+      "origin": "src/station-presentation.js",
+      "mode": "copied",
+      "bytes": 6589,
+      "sha256": "63d6f762011fa95f780bbcfc76a4da525c9c0f1a805932eae218b6757c7c4543"
+    },
+    {
+      "path": "src/storage.js",
+      "origin": "src/storage.js",
+      "mode": "copied",
+      "bytes": 13304,
+      "sha256": "cc9cdc0caec871c8abd15cc1c9ca2fc279a5d8452a592819dc85ad55b9fd31c1"
+    },
+    {
+      "path": "src/text-resources.js",
+      "origin": "src/text-resources.js",
+      "mode": "copied",
+      "bytes": 3764,
+      "sha256": "c93e327a722bfd901efadcaa8533e368b0383911f2e3c22b6fb52782dbe47931"
+    },
+    {
+      "path": "src/text-search-session.js",
+      "origin": "src/text-search-session.js",
+      "mode": "copied",
+      "bytes": 5128,
+      "sha256": "20c2a0e0451fa047c7e20392bafab6ed978e9c2bff01a57d05dc7784f0856f73"
+    },
+    {
+      "path": "src/transit-service.js",
+      "origin": "src/transit-service.js",
+      "mode": "copied",
+      "bytes": 8393,
+      "sha256": "82c5e2235e27709fe6f050109b7475683372337e630d7ca4b0d13ed0db37a1bf"
+    },
+    {
+      "path": "src/updates.js",
+      "origin": "src/updates.js",
+      "mode": "copied",
+      "bytes": 3893,
+      "sha256": "043534345cd84bab13641e8f85a357d172176ce2b3a4e2cb72fad9b0dcf6f80d"
+    },
+    {
+      "path": "src/venue-material-catalog.js",
+      "origin": "src/venue-material-catalog.js",
+      "mode": "copied",
+      "bytes": 122821,
+      "sha256": "a21ba57c4f17a16cb9e9da293b60ad65402baa1b2483020b6b0a218655d57e45"
+    },
+    {
+      "path": "style.css",
+      "origin": "style.css",
+      "mode": "copied",
+      "bytes": 1219,
+      "sha256": "53ef3ac1ce26ea19f6fd6a2c186acb0b2a966dc12be4c97f3d9a86fc8102c623"
+    },
+    {
+      "path": "tests/diagnostics-view.test.mjs",
+      "origin": "tests/diagnostics-view.test.mjs",
+      "mode": "copied",
+      "bytes": 7971,
+      "sha256": "bec7b10c7d22acb0d7003bafdbcb5efaf9488de8e826c154aad7b11bd3ff13b8"
+    },
+    {
+      "path": "tests/helpers/entry-dom.mjs",
+      "origin": "tests/helpers/entry-dom.mjs",
+      "mode": "copied",
+      "bytes": 5401,
+      "sha256": "cba9980bbf62eb60d78d12b46384fc3d717074136dd3c6c6b1f9059c4ef2debf"
+    },
+    {
+      "path": "tests/region-pack-panel.test.mjs",
+      "origin": "tests/region-pack-panel.test.mjs",
+      "mode": "copied",
+      "bytes": 16083,
+      "sha256": "3eefef1541ae5731d86ab970673c4fee33bf761e6152760d15254119e866d089"
+    },
+    {
+      "path": "tests/region-packs.test.mjs",
+      "origin": "tests/region-packs.test.mjs",
+      "mode": "copied",
+      "bytes": 22746,
+      "sha256": "a3ae109c79444abd3abfbd2a1493a8fbf9d1446e2a53269a1d2448934a535eea"
+    },
+    {
+      "path": "tests/startup-updates.test.mjs",
+      "origin": "tests/startup-updates.test.mjs",
+      "mode": "copied",
+      "bytes": 6697,
+      "sha256": "2fc481230509f0271bfc3ae3811e0dad42e7f3413aa02ec4fdf452146357f126"
+    },
+    {
+      "path": "tests/updates.test.mjs",
+      "origin": "tests/updates.test.mjs",
+      "mode": "copied",
+      "bytes": 4123,
+      "sha256": "1d1cac3f9d309149136b672e45a77081268fc3e84edae58641817e698584f3e2"
+    },
+    {
+      "path": "ui/browse.js",
+      "origin": "ui/browse.js",
+      "mode": "copied",
+      "bytes": 23710,
+      "sha256": "cdae4cd66c342bc8d6b0b79c764707f3b69d668502fb182115c756518fc4d02b"
+    },
+    {
+      "path": "ui/controller.js",
+      "origin": "ui/controller.js",
+      "mode": "copied",
+      "bytes": 8799,
+      "sha256": "128d30739d84bf7a34f04873e40176bae3ed58325991ff1a038800b63906ddba"
+    },
+    {
+      "path": "ui/desktop.html",
+      "origin": "ui/desktop.html",
+      "mode": "copied",
+      "bytes": 143395,
+      "sha256": "5d960b3f614377c62eaf0df997c6050baed3a04d1b99c566bc7a2b3c04f43f75"
+    },
+    {
+      "path": "ui/diagnostics.js",
+      "origin": "ui/diagnostics.js",
+      "mode": "copied",
+      "bytes": 20896,
+      "sha256": "d3bf6ee281d77e4e82cf6257508d45d5f69e8d89dd53d00631b5d4875374a435"
+    },
+    {
+      "path": "ui/dom.js",
+      "origin": "ui/dom.js",
+      "mode": "copied",
+      "bytes": 4095,
+      "sha256": "b95b153019a9f0a59adc5b9bd3682ba46452957d420f14a8380aebe6214a1267"
+    },
+    {
+      "path": "ui/guide.css",
+      "origin": "ui/guide.css",
+      "mode": "copied",
+      "bytes": 913,
+      "sha256": "85fc1483b1bb0c8b656c64c081188da01c0e2bac09f257e1d6bdd2d40d2c34b6"
+    },
+    {
+      "path": "ui/guide.js",
+      "origin": "ui/guide.js",
+      "mode": "copied",
+      "bytes": 11763,
+      "sha256": "47f266800d4c0d3971d89ffea31ca1945f086588cd07d20619073f3b6b84273e"
+    },
+    {
+      "path": "ui/map-splitter.js",
+      "origin": "ui/map-splitter.js",
+      "mode": "copied",
+      "bytes": 4441,
+      "sha256": "4f429a44a9e6d1d59a437a789b7fc0c0979773950bc2d4dd0d263e3941bacb1b"
+    },
+    {
+      "path": "ui/map.js",
+      "origin": "ui/map.js",
+      "mode": "copied",
+      "bytes": 49903,
+      "sha256": "8544400e962a362df657a60d0c0cd75b74a0af134be12656575cb68b2b19727b"
+    },
+    {
+      "path": "ui/material-editor.js",
+      "origin": "ui/material-editor.js",
+      "mode": "copied",
+      "bytes": 14900,
+      "sha256": "569c5bf46c7abe74ffe59d7a6e01c3fe3c4945f8a48c5835ffff1d2c86c223a0"
+    },
+    {
+      "path": "ui/materials.css",
+      "origin": "ui/materials.css",
+      "mode": "copied",
+      "bytes": 3706,
+      "sha256": "8d533f6f7f3f74701dd539d7da6723709fb3fbf59793601d80af7ef9a44a683a"
+    },
+    {
+      "path": "ui/materials.js",
+      "origin": "ui/materials.js",
+      "mode": "copied",
+      "bytes": 27957,
+      "sha256": "d432d48188f80211b2a9737948d9bbed5314be4527e0926ce6e47902884e41dd"
+    },
+    {
+      "path": "ui/mobile.html",
+      "origin": "ui/mobile.html",
+      "mode": "copied",
+      "bytes": 99934,
+      "sha256": "cbb931994c9345e7a50132bfb630c1a4aad235e198af42c3f9b568e59d1357fa"
+    },
+    {
+      "path": "ui/place-summary.js",
+      "origin": "ui/place-summary.js",
+      "mode": "copied",
+      "bytes": 959,
+      "sha256": "e553737be6a23a5d2780b9d033d9e7b2b70fe118a5c817e2e912d8aef9ea2ffc"
+    },
+    {
+      "path": "ui/portrait.html",
+      "origin": "ui/portrait.html",
+      "mode": "copied",
+      "bytes": 70373,
+      "sha256": "715d8542ef99a8adebe8f40aa5ddb6af7e02f7f61ff38a2c870f262aaf716a0b"
+    },
+    {
+      "path": "ui/reader.css",
+      "origin": "ui/reader.css",
+      "mode": "copied",
+      "bytes": 3383,
+      "sha256": "10e0891d19aeee68e1d8b7f3b522a327f30890f3221ade68795ace6196d16c2e"
+    },
+    {
+      "path": "ui/reader.js",
+      "origin": "ui/reader.js",
+      "mode": "copied",
+      "bytes": 17366,
+      "sha256": "ed6c79f543492cc03a1b0eba7714b95d89f1ca890682cdf2a2a2c115992941a3"
+    },
+    {
+      "path": "ui/runtime.css",
+      "origin": "ui/runtime.css",
+      "mode": "copied",
+      "bytes": 23743,
+      "sha256": "268d938da5270039750dbe3efb6dd63f44e53a246556125b4671c131c88525a2"
+    },
+    {
+      "path": "ui/settings.css",
+      "origin": "ui/settings.css",
+      "mode": "copied",
+      "bytes": 7992,
+      "sha256": "b9ca89e305cc91d34449e55997f08ea069d2ca008302a2f32dfe15db275ac5c9"
+    },
+    {
+      "path": "ui/settings.js",
+      "origin": "ui/settings.js",
+      "mode": "copied",
+      "bytes": 45126,
+      "sha256": "e8968e3b993470148053b8448d430ce6548e901e492dc26adcde550cae4156b5"
+    },
+    {
+      "path": "ui/update-indicator.js",
+      "origin": "ui/update-indicator.js",
+      "mode": "copied",
+      "bytes": 1234,
+      "sha256": "f341fd52318a24eb32eef085ad675d003f5925b7e9874e6ad8fb8bf1292d4123"
+    },
+    {
+      "path": "发布文件清单.md",
+      "origin": "generated",
+      "mode": "generated",
+      "bytes": 1823,
+      "sha256": "d0cf3ae05063b83d3c02d79334d09777217efe38fd383aeb3da82978b9b5a619"
+    },
+    {
+      "path": "工程表/行政区重建/共用/classification-contract-index.json",
+      "origin": "工程表/行政区重建/共用/classification-contract-index.json",
+      "mode": "copied",
+      "bytes": 1077135,
+      "sha256": "6f3b86538a89358763ad8d4ec7f85700fdb761887e929cd138c45b8df7cdb0a3"
+    },
+    {
+      "path": "工程表/行政区重建/共用/material-contract-index.json",
+      "origin": "工程表/行政区重建/共用/material-contract-index.json",
+      "mode": "copied",
+      "bytes": 468360,
+      "sha256": "f0b9b0fff904854c2aaf54d06ac8eaeafc71076c8f66981c9d3c4e19673d6d4f"
+    },
+    {
+      "path": "工程表/行政区重建/共用/分类树与标签目录.md",
+      "origin": "工程表/行政区重建/共用/分类树与标签目录.md",
+      "mode": "copied",
+      "bytes": 104602,
+      "sha256": "80d17f39da14abf9ae71e89d31c608d427b0e130abb4b01ab1be5e37abf0bf41"
+    },
+    {
+      "path": "工程表/行政区重建/模板/README.md",
+      "origin": "工程表/行政区重建/模板/README.md",
+      "mode": "copied",
+      "bytes": 381,
+      "sha256": "019331bc00a94f04f6ed50c56e357fbfb2a0de36a7d7e3c129854126f3bb7b7f"
+    },
+    {
+      "path": "工程表/行政区重建/模板/行政区主档.md",
+      "origin": "工程表/行政区重建/模板/行政区主档.md",
+      "mode": "copied",
+      "bytes": 1233,
+      "sha256": "7d292ee47ec5a903e1e268456100cafd80577d3439f5a104c055ca6049b3eb74"
+    },
+    {
+      "path": "工程表/行政区重建/模板/辅助记录.md",
+      "origin": "工程表/行政区重建/模板/辅助记录.md",
+      "mode": "copied",
+      "bytes": 1868,
+      "sha256": "c927b719be9079345d78073bf46cd9a3e77ad7bf0adff9a974a024f2eb9d2e6f"
+    },
+    {
+      "path": "工程表/行政区重建/流程/主任务流程.md",
+      "origin": "工程表/行政区重建/流程/主任务流程.md",
+      "mode": "copied",
+      "bytes": 6659,
+      "sha256": "d8867f34c110b8cdf5d9d9ed0dba64239eb4d86b83c6f88e2be30489a232e4aa"
+    },
+    {
+      "path": "工程表/行政区重建/流程/区任务说明.md",
+      "origin": "工程表/行政区重建/流程/区任务说明.md",
+      "mode": "copied",
+      "bytes": 8570,
+      "sha256": "88febd53192e52a3e4c381b9ee0b630922f89c20e0625845d42833f1a26d7794"
+    },
+    {
+      "path": "工程表/行政区重建/流程/唯一主档合同.md",
+      "origin": "工程表/行政区重建/流程/唯一主档合同.md",
+      "mode": "copied",
+      "bytes": 8113,
+      "sha256": "e1f5b4a65d434785daff2d5b9005791860f6b21ef63f894242d9f8a96895e589"
+    },
+    {
+      "path": "工程表/行政区重建/流程/回货合同.md",
+      "origin": "工程表/行政区重建/流程/回货合同.md",
+      "mode": "copied",
+      "bytes": 6359,
+      "sha256": "affd553a9401373d5a7294ffe3d9f3118397061f54b52da2b227d51ac555c8cb"
+    },
+    {
+      "path": "工程表/行政区重建/流程/字段参考.md",
+      "origin": "工程表/行政区重建/流程/字段参考.md",
+      "mode": "copied",
+      "bytes": 13121,
+      "sha256": "1d842ca502c6ba981772f8c264f103cf06417bed14b5b97b1fc8f144310fae1d"
+    },
+    {
+      "path": "工程表/行政区重建/流程/总规则.md",
+      "origin": "工程表/行政区重建/流程/总规则.md",
+      "mode": "copied",
+      "bytes": 20397,
+      "sha256": "c9173fc8860831280af2bea140494fcdbaa5b0a7d964460af438f2e3080c40a9"
+    },
+    {
+      "path": "工程表/行政区重建/流程/更新与续接.md",
+      "origin": "工程表/行政区重建/流程/更新与续接.md",
+      "mode": "copied",
+      "bytes": 4774,
+      "sha256": "776b3a4a6cebb0db325b804cae5b6a4bab5fb21656aba25bf318ac2175744c9d"
+    }
+  ]
+}

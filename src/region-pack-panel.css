@@ -1,0 +1,54 @@
+#living-japan-region-pack-panel{--lj-pack-paper:#fffdf7;--lj-pack-soft:#f6f2e8;--lj-pack-ink:#303c33;--lj-pack-muted:#788071;--lj-pack-line:#deded0;--lj-pack-green:#416d50;--lj-pack-warm:#f5e9d3;box-sizing:border-box;position:fixed;inset:0;margin:auto;width:min(850px,calc(100vw - 28px));height:min(780px,calc(100dvh - 32px));max-width:none;max-height:none;padding:0;border:1px solid var(--lj-pack-line);border-radius:18px;background:var(--lj-pack-paper);color:var(--lj-pack-ink);box-shadow:0 22px 70px #17241d55;font:400 14px/1.5 "Microsoft YaHei UI","PingFang SC",system-ui,sans-serif;z-index:30005;overflow:hidden;color-scheme:light}
+#living-japan-region-pack-panel[data-theme=night]{--lj-pack-paper:#252d28;--lj-pack-soft:#2f3831;--lj-pack-ink:#e2e8dc;--lj-pack-muted:#aab5a4;--lj-pack-line:#495445;--lj-pack-green:#89b48a;--lj-pack-warm:#494335;color-scheme:dark}
+#living-japan-region-pack-panel::backdrop{background:#17231d66;backdrop-filter:blur(2px)}
+#living-japan-region-pack-panel[open]{display:flex;flex-direction:column}
+#living-japan-region-pack-panel[hidden],#living-japan-region-pack-panel [hidden]{display:none!important}
+#living-japan-region-pack-panel *{box-sizing:border-box}
+#living-japan-region-pack-panel h2,#living-japan-region-pack-panel h3,#living-japan-region-pack-panel p{margin:0;color:inherit}
+#living-japan-region-pack-panel .lj-pack-header{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:22px 26px 17px;border-bottom:1px solid var(--lj-pack-line);flex:none}
+#living-japan-region-pack-panel h2{font-size:22px;letter-spacing:.02em}
+#living-japan-region-pack-panel .lj-pack-header-note{font-size:12px;color:var(--lj-pack-muted);margin-top:3px}
+#living-japan-region-pack-panel button{font:inherit;color:inherit;cursor:pointer;border:1px solid var(--lj-pack-line);border-radius:8px;min-height:36px;padding:6px 13px;background:var(--lj-pack-paper);text-align:center;white-space:normal;line-height:1.4;touch-action:manipulation}
+#living-japan-region-pack-panel button:hover{filter:brightness(.96)}
+#living-japan-region-pack-panel button:focus-visible{outline:2px solid var(--lj-pack-green);outline-offset:2px}
+#living-japan-region-pack-panel button:disabled{opacity:.45;cursor:default;filter:none}
+#living-japan-region-pack-panel .lj-pack-close{border:0;width:36px;height:36px;padding:0;font-size:28px;background:transparent;flex:none}
+#living-japan-region-pack-panel .lj-pack-content{overflow:auto;overscroll-behavior:contain;padding:22px 26px;flex:1;min-height:0}
+#living-japan-region-pack-panel .lj-pack-intro{border-radius:12px;background:var(--lj-pack-warm);padding:16px 18px;margin-bottom:18px}
+#living-japan-region-pack-panel .lj-pack-intro strong{display:block;font-size:18px}
+#living-japan-region-pack-panel .lj-pack-intro p{margin-top:5px;font-size:13px}
+#living-japan-region-pack-panel .lj-pack-notice,#living-japan-region-pack-panel .lj-pack-error{font-size:13px;border:1px solid var(--lj-pack-line);border-radius:10px;padding:12px 14px;margin-bottom:14px;background:var(--lj-pack-soft)}
+#living-japan-region-pack-panel .lj-pack-error{color:#b34c3c;border-color:#b34c3c66;overflow-wrap:anywhere}
+#living-japan-region-pack-panel .lj-pack-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;color:var(--lj-pack-muted);font-size:12px}
+#living-japan-region-pack-panel .lj-pack-toolbar button{font-size:12px;min-height:30px;padding:4px 10px}
+#living-japan-region-pack-panel .lj-pack-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+#living-japan-region-pack-panel .lj-pack-card{padding:16px;border:1px solid var(--lj-pack-line);border-radius:12px;background:var(--lj-pack-paper);min-width:0}
+#living-japan-region-pack-panel .lj-pack-card[data-featured=true]{grid-column:1/-1;border-color:var(--lj-pack-green);background:var(--lj-pack-soft)}
+#living-japan-region-pack-panel .lj-pack-card[data-focus=true]{scroll-margin:8px}
+#living-japan-region-pack-panel .lj-pack-card:focus-visible{outline:2px solid var(--lj-pack-green);outline-offset:2px}
+#living-japan-region-pack-panel .lj-pack-card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+#living-japan-region-pack-panel h3{font-size:16px}
+#living-japan-region-pack-panel .lj-pack-description{font-size:11px;color:var(--lj-pack-muted);margin-top:3px}
+#living-japan-region-pack-panel .lj-pack-badge{font-size:11px;white-space:nowrap;border-radius:20px;background:var(--lj-pack-soft);padding:3px 8px;color:var(--lj-pack-muted)}
+#living-japan-region-pack-panel .lj-pack-badge[data-status=ready]{color:var(--lj-pack-green)}
+#living-japan-region-pack-panel .lj-pack-badge[data-status=working]{background:var(--lj-pack-warm);color:var(--lj-pack-ink)}
+#living-japan-region-pack-panel .lj-pack-details{font-size:11px;color:var(--lj-pack-muted);margin:12px 0;overflow-wrap:anywhere}
+#living-japan-region-pack-panel .lj-pack-actions{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+#living-japan-region-pack-panel .lj-pack-actions button{font-size:12px;padding:6px 10px;min-height:33px}
+#living-japan-region-pack-panel .lj-pack-primary{background:var(--lj-pack-green);border-color:var(--lj-pack-green);color:var(--lj-pack-paper);font-weight:600}
+#living-japan-region-pack-panel .lj-pack-text-button{background:transparent;border-color:transparent;color:var(--lj-pack-muted)}
+#living-japan-region-pack-panel .lj-pack-progress-box{margin:10px 0 13px}
+#living-japan-region-pack-panel .lj-pack-phase{font-size:12px;overflow-wrap:anywhere}
+#living-japan-region-pack-panel progress{display:block;width:100%;height:7px;border:0;border-radius:8px;overflow:hidden;accent-color:var(--lj-pack-green);margin:8px 0;background:var(--lj-pack-line)}
+#living-japan-region-pack-panel progress::-webkit-progress-bar{background:var(--lj-pack-line);border-radius:8px}
+#living-japan-region-pack-panel progress::-webkit-progress-value{background:var(--lj-pack-green);border-radius:8px}
+#living-japan-region-pack-panel progress::-moz-progress-bar{background:var(--lj-pack-green);border-radius:8px}
+#living-japan-region-pack-panel .lj-pack-count{font-size:11px;color:var(--lj-pack-muted);overflow-wrap:anywhere;font-variant-numeric:tabular-nums}
+#living-japan-region-pack-panel .lj-pack-confirm{border-top:1px solid var(--lj-pack-line);margin-top:12px;padding-top:12px;font-size:12px}
+#living-japan-region-pack-panel .lj-pack-confirm p{margin-bottom:9px}
+#living-japan-region-pack-panel .lj-pack-confirm button{font-size:12px;margin-right:6px;min-height:30px}
+#living-japan-region-pack-panel .lj-pack-danger{color:#b34c3c;border-color:#b34c3c77}
+#living-japan-region-pack-panel .lj-pack-footer{display:flex;align-items:center;justify-content:space-between;gap:16px;border-top:1px solid var(--lj-pack-line);padding:15px 26px;background:var(--lj-pack-soft);flex:none}
+#living-japan-region-pack-panel .lj-pack-footer p{font-size:11px;color:var(--lj-pack-muted);max-width:560px}
+#living-japan-region-pack-panel .lj-pack-footer button{min-width:110px;flex:none}
+@media(max-width:600px){#living-japan-region-pack-panel{width:calc(100vw - 16px);height:calc(100dvh - 16px);border-radius:13px}#living-japan-region-pack-panel .lj-pack-header{padding:16px}#living-japan-region-pack-panel .lj-pack-content{padding:16px}#living-japan-region-pack-panel .lj-pack-list{grid-template-columns:minmax(0,1fr)}#living-japan-region-pack-panel .lj-pack-footer{padding:13px 16px;align-items:stretch;flex-direction:column;gap:10px}#living-japan-region-pack-panel .lj-pack-toolbar{align-items:flex-start}#living-japan-region-pack-panel .lj-pack-footer button{width:100%}}

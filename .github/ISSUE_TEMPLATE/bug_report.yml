@@ -1,0 +1,51 @@
+name: 程序错误报告
+description: 描述 Living Japan 的具体操作问题及验证环境。
+title: "[程序问题] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        请只提供与问题有关的信息。不要上传个人存档、聊天内容、账户令牌或完整本机日志。
+        本模板仍在筹备，实际发布范围以项目维护者说明为准。
+  - type: input
+    id: versions
+    attributes:
+      label: 程序与资料版本
+      description: 写明 Living Japan 版本、资料包版本；真实酒馆问题再补 SillyTavern 版本。
+    validations:
+      required: true
+  - type: dropdown
+    id: environment
+    attributes:
+      label: 问题出现在哪里
+      options:
+        - 本地隔离浏览器预览
+        - 真实 SillyTavern
+        - 脚本或自动检查
+        - 尚不能确定
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: 复现步骤
+      description: 从哪个页面开始、点了什么、在哪一步出错；地点问题请附可识别的地点名或 ID。
+    validations:
+      required: true
+  - type: textarea
+    id: actual_expected
+    attributes:
+      label: 实际结果与预期结果
+      description: 分别写明看到的结果和希望得到的结果。
+    validations:
+      required: true
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: 相关诊断与错误片段
+      description: 可粘贴检查页或资料包页面的相关错误；移除私人内容与本机绝对路径。可留空。
+  - type: textarea
+    id: impact
+    attributes:
+      label: 影响范围
+      description: 例如仅某一地点、某一地区、某种布局，或所有操作；是否出现未保存内容。

@@ -1,0 +1,55 @@
+name: 行政区资料回货
+description: 登记已确认行政区批次的版本、结果与待判；此表不代替主档。
+title: "[资料回货] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        以仓库行政区回货合同为准。这里只登记交付入口和结果，不上传完整离线源包、私人文件或本机绝对路径。
+        自动回货、中央审收和运行启用是不同状态，请按实际填写。
+  - type: input
+    id: assignment
+    attributes:
+      label: 行政区代码、负责人及已确认任务
+      description: 写明本次负责范围及对应任务入口；跨区主体写唯一 owner。
+    validations:
+      required: true
+  - type: textarea
+    id: versions
+    attributes:
+      label: 冻结版本
+      description: 来源 release、领取主档版本、共同规则／分类词典指纹、此次回货 revision。
+    validations:
+      required: true
+  - type: textarea
+    id: counts
+    attributes:
+      label: 全量处置结果与片区结果
+      description: 源输入总数、采用／排除／待判／归并数量；结构片区与直接父关系的检查结果。
+    validations:
+      required: true
+  - type: textarea
+    id: delivery
+    attributes:
+      label: 已批准交付入口与校验结果
+      description: 填写两份 Markdown 及派生回货的相对路径或经批准链接、manifest 指纹、检查结果；不要填写本机盘符路径。
+    validations:
+      required: true
+  - type: dropdown
+    id: status
+    attributes:
+      label: 当前实际状态
+      options:
+        - 候选回货，等待中央审收
+        - 中央已审收，仍有明确待判
+        - 中央已审收，本轮无待判
+        - 已获单独授权并接入隔离运行库
+    validations:
+      required: true
+  - type: textarea
+    id: pending
+    attributes:
+      label: 待判、跨区归属与下一动作
+      description: 记录对象 ID、短理由和下一动作；无待判也请明确写无。正文空位不冒充已完成正文。
+    validations:
+      required: true

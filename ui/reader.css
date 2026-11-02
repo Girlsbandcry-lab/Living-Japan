@@ -1,0 +1,33 @@
+.lj-reader-head{display:flex;flex-direction:row;align-items:center;gap:8px;box-sizing:border-box;flex:none}
+.lj-reader-head>strong{overflow-wrap:anywhere}
+.lj-reader-overlay .lj-text-meta{position:relative;display:flex;align-items:center;gap:8px;min-width:0;min-height:32px;font-size:13px;line-height:1.5}
+.lj-reader-overlay .lj-reader-shortcut{flex:none;white-space:nowrap}
+body[data-layout="desktop"] .lj-reader-head{display:grid;grid-template-columns:auto minmax(0,1fr);align-content:start;gap:5px;padding:10px 16px}
+body[data-layout="desktop"] .lj-reader-head>strong{font-size:20px;line-height:1.4;min-height:32px;display:flex;align-items:center}
+body[data-layout="desktop"] .lj-reader-head>.lj-text-meta{grid-column:1/-1}
+body[data-layout="desktop"] .lj-reader-head .lj-reader-shortcut{min-height:32px;padding:4px 7px;border:0!important;color:var(--accent);background:transparent;font-size:13px}
+.lj-reader-identity p{margin:5px 0;font-size:13px;line-height:1.6;overflow-wrap:anywhere}
+.lj-reader-info-panel{box-sizing:border-box;color:var(--ink)}
+body[data-layout="desktop"] .lj-reader-info-panel{width:min(460px,100%);max-height:min(360px,45vh)}
+.lj-reader-tabs{display:block;padding:0;border:0;flex:none}
+.lj-reader-tabs select{display:block;margin:5px 12px;width:calc(100% - 24px)}
+.lj-reader-statebar{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.lj-reader-statebar>.lj-status:first-child{flex:1;min-width:110px}.lj-reader-main textarea{min-height:0;color:var(--ink)}
+.lj-reader-own{display:flex;align-items:center;gap:8px;font-size:12px;white-space:nowrap}
+body[data-layout="desktop"] .lj-reader-docked{position:relative;inset:auto;width:100%;height:100%;border:0;display:grid;grid-template-rows:subgrid;grid-row:1/5;grid-column:1}
+.lj-reader-docked>.lj-reader-head{grid-row:1}.lj-reader-docked>.lj-reader-tabs{grid-row:2}.lj-reader-docked>.lj-reader-main{grid-row:3}.lj-reader-docked>.lj-reader-footer{grid-row:4}
+body[data-layout="desktop"] .lj-reader-docked>.lj-reader-head{grid-template-columns:minmax(0,1fr)}
+.lj-reader-docked .lj-text-tabs{gap:4px;min-height:44px;padding:0 16px}
+.lj-reader-docked .lj-text-tabs button{min-width:0;min-height:36px;padding:7px 9px;font-size:14px;white-space:nowrap}
+.lj-reader-docked .lj-text-tabs .lj-text-compare{margin-left:auto;padding-left:7px;padding-right:7px;font-size:13px;color:var(--accent);box-shadow:none}
+.lj-reader-docked .lj-reader-main article{font-size:14px;line-height:1.9}
+.lj-reader-docked .lj-reader-footer{min-height:38px;padding:8px 16px}
+.lj-reader-docked .lj-reader-footer .loc10-button{min-height:34px;padding:5px 8px;font-size:13px;white-space:nowrap}
+body[data-layout="desktop"] #ljLocationsPage .lj-reader-overlay{width:36%;min-width:300px}
+body[data-layout="portrait"] .lj-reader-head{min-height:64px;padding:8px 12px}
+body[data-layout="portrait"] .lj-reader-head>strong{font-size:18px;line-height:1.45}
+body[data-layout="portrait"] .lj-reader-main{padding:12px}
+body[data-layout="mobile"] .lj-reader-head{min-height:49px;padding:5px 10px}
+body[data-layout="mobile"] .lj-reader-head>strong{max-height:70px;overflow:auto;font-size:16px;line-height:1.4}
+body[data-layout="mobile"] .lj-reader-main{padding:9px 10px}
+body[data-layout="mobile"] .lj-reader-main article{font-size:15px;line-height:1.8}
+body[data-layout="mobile"] .lj-reader-main textarea{padding:8px;font-size:16px;line-height:1.75}

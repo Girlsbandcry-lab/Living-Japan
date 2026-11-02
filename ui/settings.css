@@ -1,0 +1,78 @@
+#set12Content.lj-settings-live{overflow:hidden}
+.lj-settings-live .set12-boundary>label,.lj-settings-live .lj-settings-boundary>label{display:flex;flex:1;flex-direction:column;gap:4px;min-width:0;color:var(--muted);font-size:12px}
+.lj-settings-live .lj-settings-boundary .input,.lj-settings-live .settings-channel .input{width:100%;min-width:0;color:var(--ink);background:var(--panel)}
+.lj-settings-live .lj-settings-channel>b{grid-row:1/3}.lj-settings-live .lj-settings-channel>label{grid-column:2;display:flex;flex-direction:column;gap:4px;min-width:0;color:var(--muted);font-size:12px}
+.lj-settings-live .lj-settings-group-status{margin:0 12px 8px;color:var(--muted);font-size:12px;line-height:1.5}.lj-settings-live [data-settings-dirty].dirty,.lj-settings-live .error{color:var(--warn)}
+.lj-settings-live .lj-favorite-actions{justify-content:flex-start;flex-wrap:wrap;margin:0 0 8px}.lj-settings-live .lj-favorite-actions .lj-meta{margin:0}#set12Content .lj-favorite-actions{padding:0 14px 10px;margin:0}
+.lj-settings-live ul{padding-left:20px;overflow-wrap:anywhere}.lj-diagnostic-filters{padding:6px 10px}
+#diagReport .lj-setting-group{padding:10px}#diagFilter .lj-diagnostic-filters{padding:0;flex-wrap:nowrap;overflow-x:auto}#diagFilter .lj-diagnostic-filters button{flex:none;min-height:28px;font-size:12px;padding:4px 6px}
+.lj-map-point-settings{container-type:inline-size;min-width:0;color:var(--ink);background:var(--panel)}
+.lj-map-point-global{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px 6px;font-size:12px;color:var(--muted)}
+.lj-map-point-actions{display:flex;align-items:center;gap:8px;flex:none}
+.lj-settings-live .lj-map-point-actions button,.lj-settings-live [data-map-point-clear-search]{min-height:36px;padding:6px 10px;font-size:12px;white-space:nowrap}
+.lj-map-point-search{display:flex;align-items:center;gap:10px;padding:6px 14px 12px;font-size:12px;color:var(--muted)}
+.lj-map-point-search label{white-space:nowrap}
+.lj-settings-live .lj-map-point-search input{flex:1;min-width:0;max-width:380px;width:auto;height:36px;padding:0 10px;border:1px solid var(--control-line);border-radius:5px;background:var(--panel);color:var(--ink);font:inherit}
+.lj-map-point-search [data-map-point-count]{margin-left:auto;white-space:nowrap}
+.lj-map-point-tabs{display:flex;gap:2px;padding:0 12px;background:var(--surface-alt,var(--paper));border-top:1px solid var(--line)}
+.lj-settings-live .lj-map-point-tabs button{flex:none;min-height:44px;border:0;border-bottom:2px solid transparent;border-radius:0;background:transparent;padding:8px 14px;color:var(--muted);font-size:13px}
+.lj-settings-live .lj-map-point-tabs button[aria-pressed="true"]{border-bottom-color:var(--accent);color:var(--accent);font-weight:600}
+.lj-map-point-browser{display:grid;grid-template-columns:214px minmax(0,1fr);height:clamp(240px,42vh,320px);border-top:1px solid var(--line)}
+.lj-map-point-groups{overflow:auto;scrollbar-width:thin;background:var(--surface-alt,var(--paper));border-right:1px solid var(--line);padding:10px 8px}
+.lj-map-point-groups>span{display:block;padding:0 10px 7px;color:var(--muted);font-size:11px}
+.lj-settings-live .lj-map-point-groups button{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;min-height:40px;margin:0 0 3px;border:0;border-radius:5px;background:transparent;padding:8px 10px;text-align:left;font-size:12px;color:var(--ink)}
+.lj-settings-live .lj-map-point-groups button[aria-pressed="true"]{background:var(--soft);color:var(--accent);font-weight:600}
+.lj-map-point-groups small{color:var(--muted);font-size:11px;white-space:nowrap;font-weight:400}
+.lj-map-point-content{display:flex;flex-direction:column;min-width:0;min-height:0}
+.lj-map-point-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:66px;padding:10px 14px;border-bottom:1px solid var(--line)}
+.lj-map-point-heading>div:first-child{min-width:0;overflow-wrap:anywhere}
+.lj-map-point-heading strong{font-size:14px;line-height:1.5}
+.lj-map-point-heading small{display:block;margin-top:4px;font-size:11px;color:var(--muted)}
+.lj-map-point-results{flex:1;min-height:0;overflow:auto;scrollbar-width:thin;padding:4px 14px 8px}
+.lj-map-point-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));column-gap:24px;align-content:start}
+.lj-map-point-row{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;min-height:49px;padding:8px 0;border-bottom:1px solid var(--line);font-size:12px}
+.lj-map-point-row>span{min-width:0;overflow-wrap:anywhere;line-height:1.5}
+.lj-map-point-row small{display:block;margin-top:3px;color:var(--muted);font-size:11px}
+.lj-map-point-row>button{flex:none}
+.lj-map-point-row:hover,.lj-settings-live .lj-map-point-tabs button:hover,.lj-settings-live .lj-map-point-groups button:hover{background:var(--hover)}
+.lj-settings-live .lj-map-point-note{margin:0;padding:10px 14px;border-top:1px solid var(--line);background:var(--surface-alt,var(--paper));color:var(--muted);font-size:11px;line-height:1.6}
+.lj-map-point-select{display:none}
+.lj-settings-live .lj-map-point-empty{grid-column:1/-1;margin:0;padding:36px 0;color:var(--muted);font-size:13px;text-align:center}
+.lj-map-point-browser.searching{grid-template-columns:minmax(0,1fr)}
+.lj-map-point-browser.searching .lj-map-point-groups,.lj-map-point-browser.searching .lj-map-point-select{display:none}
+.lj-map-point-browser.searching .lj-map-point-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+.lj-settings-live .lj-map-point-settings [hidden]{display:none!important}
+.lj-map-point-settings button:focus-visible,.lj-map-point-settings input:focus-visible,.lj-map-point-settings select:focus-visible,.lj-map-point-results:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@container (max-width:650px){
+ .lj-map-point-browser{grid-template-columns:175px minmax(0,1fr)}
+ .lj-map-point-grid{grid-template-columns:minmax(0,1fr)}
+ .lj-map-point-browser.searching .lj-map-point-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .lj-map-point-heading{flex-wrap:wrap;align-items:flex-start;gap:8px}
+ .lj-map-point-heading .lj-map-point-actions{margin-left:auto}
+ .lj-map-point-search{flex-wrap:wrap}
+ .lj-map-point-search input{max-width:none}
+ .lj-map-point-search [data-map-point-count]{width:100%;margin-left:0;font-size:11px}
+}
+@container (max-width:440px){
+ .lj-map-point-global{padding:10px;font-size:11px;gap:8px}
+ .lj-map-point-actions{gap:5px}
+ .lj-settings-live .lj-map-point-actions button{padding:7px;font-size:11px;min-height:40px}
+ .lj-map-point-search{padding:0 10px 10px;gap:8px}
+ .lj-map-point-search label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+ .lj-settings-live .lj-map-point-search input{height:40px}
+ .lj-map-point-tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:0 3px}
+ .lj-settings-live .lj-map-point-tabs button{min-width:0;padding:8px 3px;font-size:12px}
+ .lj-map-point-browser{display:block;height:clamp(260px,44vh,320px)}
+ .lj-map-point-groups{display:none}
+ .lj-map-point-content{height:100%}
+ .lj-map-point-select{display:flex;align-items:center;gap:8px;padding:10px;border-bottom:1px solid var(--line);font-size:12px}
+ .lj-map-point-select label{white-space:nowrap;color:var(--muted)}
+ .lj-settings-live .lj-map-point-select select{flex:1;min-width:0;width:auto;height:40px;padding:0 8px;border:1px solid var(--control-line);border-radius:5px;background:var(--panel);color:var(--ink);font:inherit}
+ .lj-map-point-heading{align-items:center;min-height:58px;padding:10px}
+ .lj-map-point-heading strong{font-size:13px}
+ .lj-map-point-heading .lj-map-point-actions button{min-height:36px}
+ .lj-map-point-results{padding:0 10px 8px}
+ .lj-map-point-grid,.lj-map-point-browser.searching .lj-map-point-grid{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:14px}
+ .lj-map-point-row{gap:6px;min-height:52px}
+ .lj-settings-live .lj-map-point-note{padding:10px}
+}
