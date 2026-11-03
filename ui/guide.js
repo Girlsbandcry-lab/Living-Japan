@@ -18,7 +18,7 @@ const groups = {
   interface:[
     step('map','#living-japan-open','从达摩入口打开','点击达摩打开 Living Japan。它是入口，不会追加聊天文字，也不会替你发送消息。窗口打开后仍可随时结束导览。',{surface:'host'}),
     step('map','#living-japan-open','拖动入口和贴边收起','按住达摩拖到顺手的位置，松开后记住位置。靠近屏幕边缘时会贴边，闲置后缩成窄条；移入或点它即可使用。手机上拖动和长按是不同操作。',{surface:'host'}),
-    step('map','#living-japan-floating-menu','右键或长按看快捷开关','电脑右键、手机长按打开快捷菜单。总提示、跳过用户地点、具名正文及四通道分别控制；点击开关立即保存。导览只打开菜单，不改开关。',{surface:'host',open:'quick-menu',fallbackTarget:'#living-japan-open'}),
+    step('map','#living-japan-floating-menu','右键或长按看快捷开关','电脑右键、手机长按打开快捷菜单。背景、简写、标准、细写控制上下提示词的描写要求；点选立即保存。下面分别控制地点正文，以及天气与四季、街区与户外、场馆与店铺、节庆与活动。',{surface:'host',open:'quick-menu',fallbackTarget:'#living-japan-open'}),
     step('map','.nav7,.top .nav','五个页面各管一件事','地图用于选择和路线；地点／地区用于浏览和编辑具体对象；资料管理可复用词条；检查／诊断看读取结果；齿轮进入设置。高亮底色表示当前页。'),
     step('map','[data-window-grip]','按六点柄移动窗口','横版和竖版顶栏左侧的六点柄可以拖动整个窗口，各自记住位置。拖标题空白处也可移动；普通按钮仍按按钮用途操作。',{when:ui=>ui.layout!=='mobile'}),
     step('map','[data-resize-edge]','拖边缘调整大小','右边、底边和右下角可调整大小；双击恢复适配。也可聚焦缩放柄，用方向键调整、回车复原。窗口位置与大小按横版、竖版分别记住。',{key:'window-resize',surface:'host',when:ui=>ui.layout!=='mobile'}),

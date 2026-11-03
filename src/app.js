@@ -5,9 +5,10 @@ import { createUserStore, createSillyTavernTransport } from './storage.js';
 import { createUpdateManager } from './updates.js';
 import { createCatalog } from './catalog.js';
 import { createCanonicalContextPreparer } from './place-identities.js';
+import { createWorkflowTourHost } from './workflow-tour.js';
 
 // LJ-EXT-COMPOSITION: assemble independent data, storage, session and approved UI modules.
-export async function startLivingJapan({ baseUrl, context: suppliedContext, store: suppliedStore, fetcher = fetch, packSnapshot, packages, entry: suppliedEntry, metroNames, updates: suppliedUpdates } = {}) {
+export async function startLivingJapan({ baseUrl, context: suppliedContext, store: suppliedStore, fetcher = fetch, packSnapshot, packages, entry: suppliedEntry, metroNames, updates: suppliedUpdates, workflowDemo = false } = {}) {
   const context = suppliedContext || globalThis.SillyTavern?.getContext?.();
   if (!context) throw new Error('请在 SillyTavern 中启用扩展，或打开独立预览入口');
   const started = performance.now();
@@ -23,6 +24,7 @@ export async function startLivingJapan({ baseUrl, context: suppliedContext, stor
   });
   if (!suppliedStore) await store.load();
   const entry = suppliedEntry || createFloatingEntry({store, open: () => open()});
+  entry.setWrapperChoices?.(baseline.data.wrappers, baseline.data.defaultSettings?.wrapperMode);
   const button = entry.button;
   const catalog = createCatalog({ baseData: baseline.data, baseUrl, fetcher, packSnapshot });
   const index = await catalog.loadIndex();
@@ -243,8 +245,10 @@ export async function startLivingJapan({ baseUrl, context: suppliedContext, stor
     }
     shell.hidden = shellViewport.hidden = false; renderFrame(); entry.setOpen?.(true);
   }
+  const workflowTour = workflowDemo ? null : createWorkflowTourHost({ baseUrl, store, layout });
   const bridge = {
     baseline, session, store, catalog, updates, context, baseUrl, state, fetcher, packages,
+    workflowDemo, workflowTour,
     openPackages: (...args) => packages?.open(...args),
     canLeave: async () => !frame?.contentWindow?.LivingJapanView?.leave || await frame.contentWindow.LivingJapanView.leave(),
     isOpen: () => Boolean(shell && !shell.hidden),
@@ -268,11 +272,12 @@ export async function startLivingJapan({ baseUrl, context: suppliedContext, stor
     open, close, mountWindowDrag,
     guideHost: { document, openQuickMenu: () => entry.openMenu?.() },
     metrics: { startupMs: Math.round(performance.now() - started), baselineRelease: baseline.data.releaseId },
-    destroy() { session.stop(); catalog.destroy?.(); document.removeEventListener('click',outsideClick); unsubscribeStore(); inputObserver?.disconnect(); window.removeEventListener('resize',sizeFrame); window.visualViewport?.removeEventListener('resize',sizeFrame); window.visualViewport?.removeEventListener('scroll',sizeFrame); shellViewport?.remove(); if(!suppliedEntry)entry.destroy(); listeners.clear(); },
+    destroy() { workflowTour?.destroy(); session.stop(); catalog.destroy?.(); document.removeEventListener('click',outsideClick); unsubscribeStore(); inputObserver?.disconnect(); window.removeEventListener('resize',sizeFrame); window.visualViewport?.removeEventListener('resize',sizeFrame); window.visualViewport?.removeEventListener('scroll',sizeFrame); shellViewport?.remove(); if(!suppliedEntry)entry.destroy(); listeners.clear(); },
   };
   globalThis.LivingJapanBridge = bridge;
-  const outsideClick=event=>{if(shell&&!shell.hidden&&!pinned&&!shellViewport.contains(event.target)&&!entry.control?.contains(event.target)&&!button.contains(event.target)&&!event.target.closest?.('[data-lj-region-panel],[data-lj-guide]'))void close();};
+  const outsideClick=event=>{if(!workflowTour?.isOpen()&&shell&&!shell.hidden&&!pinned&&!shellViewport.contains(event.target)&&!entry.control?.contains(event.target)&&!button.contains(event.target)&&!event.target.closest?.('[data-lj-region-panel],[data-lj-guide],#living-japan-workflow-tour'))void close();};
   document.addEventListener('click',outsideClick);
   const unsubscribeStore=store.subscribe(data => { pinned=isPinned(data); emit(); });
+  if (workflowTour) void workflowTour.offer().catch(error => entry.setError?.(error));
   return bridge;
 }

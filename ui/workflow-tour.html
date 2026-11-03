@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Living Japan 完整流程演示</title><link rel="stylesheet" href="./workflow-tour.css"></head>
+<body>
+  <header id="workflowChrome">
+    <div class="workflow-heading"><strong>演示 · 示例资料</strong><span id="workflowPosition"></span><button id="workflowExit" type="button">结束本章</button></div>
+    <div class="workflow-copy"><p id="workflowChapter"></p><h1 id="workflowTitle">正在准备演示</h1><p id="workflowText">正在打开与正式程序相同的页面。</p></div>
+    <nav aria-label="本章导览"><button id="workflowPrevious" type="button">上一步</button><span id="workflowStatus" role="status"></span><button id="workflowRetry" type="button" hidden>重新打开本步</button><button id="workflowNext" type="button">下一步</button><button id="workflowNextChapter" type="button" hidden>继续下一章</button></nav>
+  </header>
+  <div id="workflowIllustration" hidden></div><div id="workflowRing" aria-hidden="true" hidden></div>
+  <section id="workflowChat" aria-label="演示聊天输入"><label for="send_textarea">示例聊天框</label><textarea id="send_textarea" readonly spellcheck="false"></textarea></section>
+  <span id="previewStatus" hidden>演示布局</span>
+  <script type="module" src="./workflow-tour.js"></script>
+</body></html>
