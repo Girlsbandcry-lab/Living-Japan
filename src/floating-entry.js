@@ -1,3 +1,5 @@
+import { MATERIAL_LAYER_LABELS } from './material-catalog.js';
+
 // LJ-FLOATING-ENTRY-20261031: v3.6 daruma artwork and gestures; immediate open and independent quick settings.
 const DARUMA_SVG = "<svg class=\"lj-fab-expanded-flower lj-fab-daruma\" viewBox=\"0 0 64 64\" aria-hidden=\"true\" focusable=\"false\"><path d=\"M32 3C15 3 6 17 5 37 4 53 15 61 32 61S60 53 59 37C58 17 49 3 32 3Z\" fill=\"#dd332d\" stroke=\"#a62022\" stroke-width=\"2\"/><path d=\"M13 22C14 11 24 8 32 8S50 11 51 22L49 35C44 41 20 41 15 35Z\" fill=\"#fff2d7\"/><path d=\"M15 19Q22 11 28 17M36 17Q43 11 49 19\" fill=\"none\" stroke=\"#312b2a\" stroke-width=\"3.4\" stroke-linecap=\"round\"/><g class=\"lj-daruma-eyes\"><path d=\"M15 23Q22 18 28 23Q22 29 15 23M36 23Q43 18 50 23Q43 29 36 23\" fill=\"#fff\" stroke=\"#6d392f\" stroke-width=\"1.2\"/><circle cx=\"25\" cy=\"23\" r=\"2.8\" fill=\"#292525\"/><circle cx=\"46\" cy=\"23\" r=\"2.8\" fill=\"#292525\"/></g><path d=\"M31 25 29 30 34 30M29 32Q23 28 18 33M35 32Q41 28 46 33M22 35Q32 40 43 34\" fill=\"none\" stroke=\"#3a2c29\" stroke-width=\"2.3\" stroke-linecap=\"round\"/><path d=\"M23 39 20 46M32 41 32 48M41 39 44 46M13 40 10 48M51 40 54 48\" stroke=\"#f5bd58\" stroke-width=\"2.3\" stroke-linecap=\"round\"/><path d=\"M23 51Q32 47 41 51L39 57 25 57Z\" fill=\"#f6c966\"/><path d=\"M29 51 29 55M35 51 35 55\" stroke=\"#a52a24\" stroke-width=\"1.6\"/></svg><svg class=\"lj-fab-edge-flower lj-fab-daruma-squashed\" viewBox=\"0 0 19 58\" aria-hidden=\"true\" focusable=\"false\"><rect class=\"lj-fab-tab-frame\" x=\".5\" y=\".5\" width=\"18\" height=\"57\" rx=\"5\"/><path d=\"M9.5 4C3 4 2 12 2.2 30L2 44Q2 54 9.5 54T17 44L16.8 30C17 12 16 4 9.5 4Z\" fill=\"#dc352e\"/><path d=\"M4 17Q4 10 9.5 10T15 17L14 33Q9.5 38 5 33Z\" fill=\"#fff2d7\"/><path d=\"M4.5 18 7.8 15.5M11 15.5 14.5 18\" stroke=\"#332925\" stroke-width=\"1.8\" stroke-linecap=\"round\"/><g class=\"lj-daruma-eyes\"><ellipse cx=\"6.8\" cy=\"23\" rx=\"2.5\" ry=\"3.5\" fill=\"#fff\"/><ellipse cx=\"12.3\" cy=\"23\" rx=\"2.2\" ry=\"3.5\" fill=\"#fff\"/><ellipse cx=\"8\" cy=\"23.5\" rx=\"1.3\" ry=\"2.2\" fill=\"#292525\"/><ellipse cx=\"13.3\" cy=\"23.5\" rx=\"1.2\" ry=\"2.2\" fill=\"#292525\"/></g><path d=\"M9.5 26 8.5 29 11 29M8.8 31 5 32.5M10.5 31 14 32.5M6 34Q9.5 37 13 33.5\" fill=\"none\" stroke=\"#382b27\" stroke-width=\"1.4\" stroke-linecap=\"round\"/><path d=\"M5 39 4 44M9.5 40 9.5 45M14 39 15 44\" stroke=\"#f6c866\" stroke-width=\"1.8\" stroke-linecap=\"round\"/><rect x=\"5.5\" y=\"47\" width=\"8\" height=\"5\" rx=\"1.5\" fill=\"#f6c866\"/><path d=\"M8 48 8 51M11 48 11 51\" stroke=\"#a52a24\" stroke-width=\"1\"/></svg>";
 const instances = new WeakMap();
@@ -5,11 +7,10 @@ const SWITCHES = [
   ['masterEnabled', '提示注入', '自动读取聊天中的资料'],
   ['skipUserLocationInput', '跳过用户地点输入', '地点改读最近 AI 回复；时间天气照常'],
   ['namedPlaceBodiesEnabled', '具名地点正文', '地点的完整描写'],
-  ['layer:TN', '时间与自然', '天光、天气与季节'],
-  ['layer:EX', '外部地域', '地区与周边环境'],
-  ['layer:IN', '内部场所', '场馆与室内环境'],
-  ['layer:EV', '明确场景事件', '活动与现场情景'],
+  ...Object.entries(MATERIAL_LAYER_LABELS).map(([id, label]) => ['layer:' + id, label, '']),
 ];
+// LJ-QUICK-WRAPPER-20261103: existing wrapper choices and reading drafts share the same saved mode.
+const WRAPPER_MODES = [['background', '背景'], ['brief', '简写'], ['standard', '标准'], ['detailed', '细写']];
 const dockEdge = value => ['left', 'right', 'top', 'bottom'].includes(value) ? value : null;
 const point = value => Number.isFinite(value?.x) && Number.isFinite(value?.y) ? { x: value.x, y: value.y } : null;
 // LJ-LOCATION-INPUT-TOGGLE-20261101: this optional reading mode is off until explicitly enabled.
@@ -44,14 +45,27 @@ export function createFloatingEntry({ store, open, document = globalThis.documen
   menu.append(title, subtitle);
   const switches = SWITCHES.map(([key, label, description]) => {
     const row = make('button', 'lj-entry-switch'); row.type = 'button'; row.setAttribute('role', 'menuitemcheckbox'); row.setAttribute('data-setting', key);
-    const words = make('span', 'lj-entry-switch-words'); words.append(make('strong', '', label), make('small', '', description));
+    const words = make('span', 'lj-entry-switch-words'); words.append(make('strong', '', label)); if (description) words.append(make('small', '', description));
     const mark = make('span', 'lj-entry-switch-mark'); mark.setAttribute('aria-hidden', 'true');
-    row.append(words, mark); menu.append(row); return { key, row, mark };
+    row.append(words, mark); return { key, row, mark };
   });
+  const wrapperSection = make('section', 'lj-entry-wrapper');
+  const wrapperTitle = make('strong', 'lj-entry-section-title', '外围提示词强度');
+  const wrapperGroup = make('div', 'lj-entry-wrapper-choices'); wrapperGroup.setAttribute('role', 'group'); wrapperGroup.setAttribute('aria-label', '外围提示词强度');
+  const wrappers = WRAPPER_MODES.map(([id, label]) => {
+    const row = make('button', 'lj-entry-wrapper-choice'); row.type = 'button'; row.setAttribute('role', 'menuitemradio'); row.setAttribute('data-wrapper-mode', id);
+    row.append(make('span', '', label)); const mark = make('span', 'lj-entry-wrapper-mark', '✓'); mark.setAttribute('aria-hidden', 'true'); row.append(mark);
+    wrapperGroup.append(row); return { id, row };
+  });
+  wrapperSection.append(wrapperTitle, wrapperGroup);
+  const channelGrid = make('div', 'lj-entry-channel-grid'); channelGrid.setAttribute('role', 'group'); channelGrid.setAttribute('aria-label', '四类附加资料');
+  for (const { row } of switches.slice(3)) channelGrid.append(row);
+  menu.append(switches[0].row, wrapperSection, ...switches.slice(1, 3).map(item => item.row), make('div', 'lj-entry-section-title lj-entry-channel-title', '四类附加资料'), channelGrid);
   const openButton = make('button', 'lj-entry-open-panel', '打开 Living Japan 面板'); openButton.type = 'button'; openButton.setAttribute('role', 'menuitem');
   const errorNote = make('div', 'lj-entry-error'); errorNote.hidden = true; errorNote.setAttribute('role', 'alert');
   menu.append(openButton, errorNote); control.append(button, menu); document.body.append(control);
   let destroyed = false, isOpen = false, hovered = false, focused = false, gesture = null, suppressUntil = 0, busy = false, errorText = '';
+  let wrapperDefault = 'background', wrapperIds = new Set(WRAPPER_MODES.map(([id]) => id));
   let saved = store.read(), savedPoint = point(saved.extensionUi?.entryPosition) || point(saved.livingJapanUIPreferences?.sakuraFabPosition);
   let savedEdge = dockEdge(Object.hasOwn(saved.extensionUi || {}, 'entryDockEdge') ? saved.extensionUi.entryDockEdge : saved.livingJapanUIPreferences?.sakuraFabDockEdge);
   const media = window.matchMedia?.('(prefers-color-scheme: dark)');
@@ -87,6 +101,15 @@ export function createFloatingEntry({ store, open, document = globalThis.documen
     control.setAttribute('data-theme', theme === 'night' || (theme === 'auto' && media?.matches) ? 'night' : 'day');
     subtitle.textContent = active ? '快捷开关 · 即时保存' : '总开关已暂停，各通道选择保留';
     for (const { key, row, mark } of switches) { const value = enabled(settings, key); row.setAttribute('aria-checked', String(value)); row.disabled = busy; mark.textContent = value ? '开' : '关'; }
+    const mode = wrapperIds.has(settings.wrapperMode) ? settings.wrapperMode : wrapperDefault;
+    for (const { id, row } of wrappers) { row.hidden = !wrapperIds.has(id); row.disabled = busy; row.setAttribute('aria-checked', String(id === mode)); }
+  }
+  function setWrapperChoices(choices, defaultMode = 'background') {
+    const ids = WRAPPER_MODES.map(([id]) => id).filter(id => Object.hasOwn(choices || {}, id));
+    if (!ids.length) return;
+    wrapperIds = new Set(ids); wrapperDefault = wrapperIds.has(defaultMode) ? defaultMode : ids[0];
+    for (const { id, row } of wrappers) row.title = choices[id]?.label || WRAPPER_MODES.find(([key]) => key === id)[1];
+    render(); if (!menu.hidden) positionMenu();
   }
   function setError(error) { errorText = error ? String(error.message || error) : ''; errorNote.textContent = errorText; errorNote.hidden = !errorText; render(); }
   function positionMenu() {
@@ -118,6 +141,13 @@ export function createFloatingEntry({ store, open, document = globalThis.documen
     } catch (error) { setError(error); }
     finally { busy = false; render(); }
   }
+  async function chooseWrapper(id) {
+    if (busy || !wrapperIds.has(id)) return;
+    busy = true; setError(null);
+    try { await store.update(draft => { draft.livingJapanSettings ||= {}; draft.livingJapanSettings.wrapperMode = id; return draft; }); saved = store.read(); }
+    catch (error) { setError(error); }
+    finally { busy = false; render(); }
+  }
   on(button, 'click', event => { event.preventDefault(); event.stopPropagation(); if (now() >= suppressUntil) requestOpen(); });
   on(button, 'contextmenu', event => { event.preventDefault(); event.stopPropagation(); openMenu(); });
   on(button, 'keydown', event => {
@@ -126,12 +156,18 @@ export function createFloatingEntry({ store, open, document = globalThis.documen
   });
   on(openButton, 'click', event => { event.stopPropagation(); requestOpen(); });
   for (const { key, row } of switches) on(row, 'click', event => { event.stopPropagation(); void toggle(key); });
+  for (const { id, row } of wrappers) on(row, 'click', event => { event.stopPropagation(); void chooseWrapper(id); });
   on(menu, 'click', event => event.stopPropagation());
   on(menu, 'keydown', event => {
     if (event.key === 'Escape') { event.preventDefault(); closeMenu(true); return; }
+    if (['ArrowLeft', 'ArrowRight'].includes(event.key)) {
+      const choices = wrappers.filter(item => !item.row.hidden && !item.row.disabled), index = choices.findIndex(item => item.row === document.activeElement);
+      if (index < 0) return;
+      event.preventDefault(); choices[(index + (event.key === 'ArrowRight' ? 1 : choices.length - 1)) % choices.length]?.row.focus(); return;
+    }
     if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
     event.preventDefault();
-    const items = [...switches.map(item => item.row), openButton].filter(item => !item.disabled), index = items.indexOf(document.activeElement);
+    const items = [switches[0].row, ...wrappers.map(item => item.row), ...switches.slice(1).map(item => item.row), openButton].filter(item => !item.disabled && !item.hidden), index = items.indexOf(document.activeElement);
     const next = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : event.key === 'ArrowUp' ? (index - 1 + items.length) % items.length : (index + 1) % items.length;
     items[next]?.focus();
   });
@@ -190,5 +226,5 @@ export function createFloatingEntry({ store, open, document = globalThis.documen
     if (instances.get(document) === destroy) instances.delete(document);
   }
   instances.set(document, destroy);
-  return { button, control, destroy, setError, openMenu, setOpen(value) { isOpen = Boolean(value); scheduleIdle(); } };
+  return { button, control, destroy, setError, openMenu, setWrapperChoices, setOpen(value) { isOpen = Boolean(value); scheduleIdle(); } };
 }

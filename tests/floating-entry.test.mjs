@@ -51,3 +51,39 @@ test('touch long press opens the quick menu without opening the panel and failur
   assert.match(menu.querySelector('[role="alert"]').textContent, /保存失败/);
   assert.equal(entry.button.getAttribute('data-enabled'), 'true'); entry.destroy();
 });
+
+test('wrapper quick choices use runtime modes in reading order and only save the selected mode', async () => {
+  const env = entryDOM(), original = { livingJapanSettings: { wrapperMode: 'background', historyDepth: 7, layers: { TN: false }, future: 9 }, livingJapanTextOverrides: { records: { keep: '个人正文' } } };
+  const store = entryStore(original), entry = create({ ...env, store, open() {} });
+  try {
+    assert.equal(typeof entry.setWrapperChoices, 'function');
+    entry.setWrapperChoices({ detailed: { label: '细写' }, background: { label: '背景（默认）' }, standard: { label: '标准' }, brief: { label: '简写' } });
+    entry.openMenu();
+    const menu = env.document.getElementById('living-japan-floating-menu'), choices = menu.querySelectorAll('[data-wrapper-mode]');
+    assert.deepEqual(choices.map(row => row.dataset.wrapperMode), ['background', 'brief', 'standard', 'detailed']);
+    assert.equal(choices[0].getAttribute('aria-checked'), 'true');
+    choices[3].fire('click'); await Promise.resolve(); await Promise.resolve();
+    assert.deepEqual(store.read(), { ...original, livingJapanSettings: { ...original.livingJapanSettings, wrapperMode: 'detailed' } });
+    assert.equal(menu.hidden, false); assert.equal(choices[3].getAttribute('aria-checked'), 'true');
+    await store.update(value => { value.livingJapanSettings.wrapperMode = 'brief'; });
+    assert.equal(choices[1].getAttribute('aria-checked'), 'true');
+    assert.equal(choices[3].getAttribute('aria-checked'), 'false');
+    choices[1].focus(); menu.fire('keydown', { key: 'ArrowRight' });
+    assert.equal(env.document.activeElement, choices[2]);
+  } finally { entry.destroy(); }
+});
+
+test('wrapper save failure keeps the previous choice and a stopped master keeps the saved mode', async () => {
+  const env = entryDOM(), store = entryStore({ livingJapanSettings: { wrapperMode: 'standard', masterEnabled: false } });
+  const entry = create({ ...env, store, open() {} });
+  try {
+    entry.openMenu(); const menu = env.document.getElementById('living-japan-floating-menu');
+    const standard = menu.querySelector('[data-wrapper-mode="standard"]'), detailed = menu.querySelector('[data-wrapper-mode="detailed"]');
+    assert.ok(standard); assert.ok(detailed); assert.equal(standard.getAttribute('aria-checked'), 'true');
+    store.update = async () => { throw Error('保存失败，请重试'); };
+    detailed.fire('click'); await Promise.resolve(); await Promise.resolve();
+    assert.equal(standard.getAttribute('aria-checked'), 'true'); assert.equal(detailed.getAttribute('aria-checked'), 'false');
+    assert.equal(store.read().livingJapanSettings.wrapperMode, 'standard');
+    assert.match(menu.querySelector('[role="alert"]').textContent, /保存失败/); assert.equal(menu.hidden, false);
+  } finally { entry.destroy(); }
+});

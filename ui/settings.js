@@ -3,6 +3,7 @@ import { METRO_POINT_CATEGORIES, METRO_POINT_GROUPS, normalizeMetroPointVisibili
 import { MATERIAL_LAYER_LABELS } from '../src/material-catalog.js';
 import { DEFAULT_PEER_PLACE_QUOTA, normalizePeerPlaceQuotas, PEER_PLACE_CATEGORIES, PEER_PLACE_GROUPS } from '../src/peer-place-selection.js';
 import { GUIDE_CHAPTERS } from './guide.js';
+import { WORKFLOW_CHAPTERS } from './workflow-chapters.js';
 
 const clone = value => JSON.parse(JSON.stringify(value));
 const CHANNELS = Object.entries(MATERIAL_LAYER_LABELS);
@@ -209,15 +210,17 @@ export function mountSettings(ui) {
     const updateButtons = button('check-update', '检查程序更新') + button('update', '更新程序', false, !updateResult?.available ? 'disabled' : '');
     const programRow = row('程序框架', '<div class="lj-update-controls"><p class="lj-update-line" data-program-update-note role="status"></p><div class="lj-update-actions">' + updateButtons + '</div></div>');
     const packageRow = ui.bridge.packages ? row('地区资料', '<div class="lj-update-controls"><p class="lj-update-line" data-package-update-note role="status"></p><div class="lj-update-actions">' + button('check-pack-updates', '检查资料更新') + button('region-packs', '地区资料包') + button('update-log', '更新记录') + '</div><div class="lj-update-copy"><p class="lj-update-small" data-update-summary></p><p class="lj-update-small" data-update-notice></p></div></div>') : '';
-    const guideParts = GUIDE_CHAPTERS.map(({id,label}) => button(`guide-${id}`, label)).join('');
+    const chapterSelect = (chapters, attribute, label) => `<select ${attribute} aria-label="${label}">${chapters.map(({id,label}) => `<option value="${esc(id)}">${esc(label)}</option>`).join('')}</select>`;
+    const workflowControls = button('workflow-all', '从头看完整流程', true) + `<div class="lj-update-actions">${chapterSelect(WORKFLOW_CHAPTERS, 'data-workflow-chapter', '选择流程章节')}${button('workflow-chapter', '看这一章')}</div>`;
+    const pageGuideControls = `<div class="lj-update-actions">${chapterSelect(GUIDE_CHAPTERS, 'data-page-guide-chapter', '选择页面讲解')}${button('guide-page', '讲解这一页')}</div>` + button('guide-all', '顺读全部页面讲解');
+    const guideRows = row('完整流程演示', workflowControls, '用示例带你完成操作，自动打开页面、保存并展示结果。原工作内容保留；章内按上一步、下一步看。') + row('页面讲解 · 查按钮用途', pageGuideControls, '保留原来的界面讲解。在你的当前页面旁解释按钮，适合忘记用法时查阅。');
     const orphanList = `<ul>${Object.entries(overrides.orphans).map(([key, item]) => `<li>${esc(item.packageId || key)} · ${esc(key)}</li>`).join('')}</ul>`;
     if (desktop) return group('用户资料备份', `${Object.keys(overrides.records).length} 段修改稿 · ${Object.keys(overrides.orphans).length} 段未对应`, row('导出用户备份', `<div class="lj-update-actions">${exportControls}</div>`, backupNote) + row('导入用户备份', button('import', '导入备份') + file, '导入前先预览将要合并和覆盖的内容。')) +
       group('扩展更新', '保留用户保存', programRow + packageRow) +
-      group('使用说明与操作引导', '十篇详细导览，可随时结束', `<div class="set12-guide"><p>可完整顺读或按分篇查看；只阅读并略过实践也可以，不会替你保存或改开关。</p><div class="set12-guidefull"><div><strong>重新观看完整引导</strong><small>入口窗口 → 地图路线 → 地点浏览 → 地点编辑 → 附加资料 → 资料正文 → 条件有效词 → 设置配额 → 诊断 → 备份更新</small></div>${button('guide-all', '开始完整引导', true)}</div><div class="set12-partgrid lj-guide-parts">${guideParts}</div></div>`) +
+      group('使用说明与操作引导', '完整演示与按页查阅', guideRows) +
       (Object.keys(overrides.orphans).length ? group('未对应旧稿', '仍在备份中保留', `<div class="set12-guide">${orphanList}</div>`) : '');
     return group('备份与说明', '低频入口', row('用户资料备份', `<div class="lj-update-actions">${exportControls}${button('import', '导入备份')}${file}</div>`, backupNote) +
-      programRow + packageRow + row('完整操作引导', button('guide-all', '开始完整引导', true), '十篇详细导览，可随时结束；不会替你保存或改开关。') +
-      row('分篇查看', `<div class="lj-guide-parts">${guideParts}</div>`, '按当前布局查看真实入口；可随时结束或重播。') + (Object.keys(overrides.orphans).length ? `<div class="set-row"><div class="set-label"><b>未对应旧稿</b></div><p>仍在备份中保留。</p>${orphanList}</div>` : ''), 'settings-backup');
+      programRow + packageRow + guideRows + (Object.keys(overrides.orphans).length ? `<div class="set-row"><div class="set-label"><b>未对应旧稿</b></div><p>仍在备份中保留。</p>${orphanList}</div>` : ''), 'settings-backup');
   }
   function patchUpdateStatus() {
     const header = document.getElementById(desktop ? 'set12Headnote' : 'lj-settings-status');
@@ -464,16 +467,29 @@ export function mountSettings(ui) {
       else if (action === 'update') {
         const choice = await ui.ask({ title: '更新扩展', message: '更新程序框架，用户保存保留。更新后需刷新，当前未保存输入请先处理。', choices: [{ id: 'cancel', label: '取消' }, { id: 'update', label: '开始更新', primary: true }] });
         if (choice === 'update') { target.disabled = true; const result = await updates.update(); message(result.reloadRequired ? '扩展已更新；保存当前输入后刷新页面应用' : '当前扩展已是最新版'); updateResult = updates.getState?.() || { supported: true, available: false, reloadRequired: result.reloadRequired }; patchUpdateStatus(); }
+      } else if (action.startsWith('workflow-')) {
+        await ui.bridge.workflowTour?.start(action === 'workflow-all' ? 'all' : content.querySelector('[data-workflow-chapter]').value);
       } else if (action.startsWith('guide-')) {
-        await ui.guide.start(action.slice(6));
+        await ui.guide.start(action === 'guide-page' ? content.querySelector('[data-page-guide-chapter]').value : action.slice(6));
       }
     } catch (error) { message(action.includes('update') ? '更新检查或下载未完成，请重试。' : error.message || String(error), 'error'); }
   });
+  let observedWrapperMode = settings().wrapperMode;
   const unsubscribeLocationInput = ui.bridge.subscribe?.(() => {
-    const on = settings().skipUserLocationInput === true;
+    const current = settings(), on = current.skipUserLocationInput === true;
     content.querySelectorAll('[data-settings-common="skipUserLocationInput"]').forEach(node => {
       node.setAttribute('aria-pressed', String(on)); node.classList.toggle('on', on);
     });
+    if (current.wrapperMode !== observedWrapperMode) {
+      observedWrapperMode = current.wrapperMode;
+      if (reading) {
+        reading.wrapperMode = current.wrapperMode;
+        readingDirty = READING_KEYS.some(key => JSON.stringify(reading[key]) !== JSON.stringify(current[key]));
+        content.querySelectorAll('[data-settings-reading="wrapperMode"]').forEach(node => { node.value = current.wrapperMode; });
+        const note = content.querySelector('[data-settings-dirty="reading"]');
+        if (note) { note.textContent = readingDirty ? '读取设置尚未保存' : '当前没有待保存修改'; note.classList.toggle('dirty', readingDirty); }
+      }
+    }
   });
   const unsubscribePackUpdates = packManager?.subscribeUpdates?.(value => { packUpdates = value; patchUpdateStatus(); });
   const unsubscribeProgramUpdates = updates?.subscribe?.(value => { updateResult = value; patchUpdateStatus(); });

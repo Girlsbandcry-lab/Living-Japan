@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "candidate": "source-v20261103.1",
+  "candidate": "source-v20261103.2",
   "publicationState": "published",
   "files": [
     {
@@ -70,15 +70,15 @@
       "path": "PROJECT_TODO.md",
       "origin": "PROJECT_TODO.md; public evidence links only",
       "mode": "generated",
-      "bytes": 759,
-      "sha256": "504148ea81e3bb405d1f0da221e69d54d737ad8827ef812e7be4a302d64e0776"
+      "bytes": 924,
+      "sha256": "07fe924a8fb5698c5893559c82cb6b239ae2eb4e061a61109ea6d65c7ba5ba0d"
     },
     {
       "path": "README.md",
       "origin": "README.md; source-role guidance",
       "mode": "generated",
-      "bytes": 2759,
-      "sha256": "49135b2ff3b15057f6f2f166bfe4580079ae7f35c3b283220978e6192990576b"
+      "bytes": 3564,
+      "sha256": "bf2d0b0dbba68d021c0b08f70333c72ccc72145bb79e138046c31d76bc8f8332"
     },
     {
       "path": "assets/map-icons/Apache-2.0.txt",
@@ -204,7 +204,7 @@
       "origin": "distribution-v20261102/framework/data/region-framework.json",
       "mode": "copied",
       "bytes": 783265,
-      "sha256": "efc0fb0327c8e6d3f43b5b7650bb532f4b860ed12de586e05254a690732a49a3"
+      "sha256": "b5e2313f02f8d57f94b2987880e2db291ff5bf787d42ca4d76fd4b9c13058408"
     },
     {
       "path": "data/region-pack-source.json",
@@ -217,8 +217,8 @@
       "path": "docs/安装与恢复.md",
       "origin": "docs/安装与恢复.md",
       "mode": "copied",
-      "bytes": 2469,
-      "sha256": "bb8feb4619a8c7544f52dfdab90ec55612e4a6b36b32e0baeaa88985fd75f983"
+      "bytes": 3059,
+      "sha256": "9ec5d73c31decec2ce3b22fafc0901a710f7be682f3326ab82b085d60d0460f3"
     },
     {
       "path": "docs/来源与许可证.md",
@@ -238,8 +238,8 @@
       "path": "docs/验证说明.md",
       "origin": "generated; scoped verification",
       "mode": "generated",
-      "bytes": 2906,
-      "sha256": "ab887c8659da6e19461b906aabb071449f19fb3a48539e6a230456c1463e7f3e"
+      "bytes": 4350,
+      "sha256": "f4e443239177085ac5c58371d1d1b541c495abb41f5e63b7ed8d4e5ae754d629"
     },
     {
       "path": "index.js",
@@ -253,7 +253,7 @@
       "origin": "manifest.json",
       "mode": "copied",
       "bytes": 288,
-      "sha256": "1283a686e46d30dfdc50c30bdeb55853a4239616baf1441283e8aab7636b27ce"
+      "sha256": "9c0917cd9e602af0fa1f35fb4c844951d6a2c85fc1c6a53a6086b9773d76ac25"
     },
     {
       "path": "package.json",
@@ -301,8 +301,8 @@
       "path": "src/app.js",
       "origin": "src/app.js",
       "mode": "copied",
-      "bytes": 20140,
-      "sha256": "8b93fc98fe340937561a60e24defc39b42457eb27bda15583080cdf3ad464768"
+      "bytes": 20614,
+      "sha256": "e0dbc899e30bb27ac6c3eceb0168502fbe10ef5d7e8d036a7f7a3f2e3b31ffe4"
     },
     {
       "path": "src/baseline.js",
@@ -357,15 +357,15 @@
       "path": "src/floating-entry.css",
       "origin": "src/floating-entry.css",
       "mode": "copied",
-      "bytes": 5866,
-      "sha256": "09fbb179b831676b26c0fa62fa6ef3b4ed1212d5870dd0cb3ea37012268ad4bc"
+      "bytes": 7427,
+      "sha256": "528a3abd9382a5a8dc27ce96f161dfd9688d5fbe65d6b884948b375a2377dc5f"
     },
     {
       "path": "src/floating-entry.js",
       "origin": "src/floating-entry.js",
       "mode": "copied",
-      "bytes": 16718,
-      "sha256": "d1428e2f1e56a8ee6756eeea1fd80b13ff0ccd929e977231f7c698dca216657e"
+      "bytes": 19884,
+      "sha256": "46a0daf8efc7d6a20edfdacf338c857e7a31beeed5ea6acd1d1ccfb85764815a"
     },
     {
       "path": "src/geographic-directory.js",
@@ -774,6 +774,27 @@
       "sha256": "47e5f591046d942c0332c9a07424562bca5246e2a47675085e7f836f39ec9906"
     },
     {
+      "path": "src/workflow-demo-data.js",
+      "origin": "src/workflow-demo-data.js",
+      "mode": "copied",
+      "bytes": 9659,
+      "sha256": "cfe56d8fb86224c7976ad600c3a2d1e47785dfaf7c642460aceefc197a7a0026"
+    },
+    {
+      "path": "src/workflow-tour.css",
+      "origin": "src/workflow-tour.css",
+      "mode": "copied",
+      "bytes": 855,
+      "sha256": "67c539197b4ebbf098c77a7e993eae552402b414e905102bdd2ac0aa36225bbd"
+    },
+    {
+      "path": "src/workflow-tour.js",
+      "origin": "src/workflow-tour.js",
+      "mode": "copied",
+      "bytes": 4394,
+      "sha256": "1d429d7f11a3cd60aabdf32447b2f9dce1c0f7c1251b02148cdf74496423a41b"
+    },
+    {
       "path": "style.css",
       "origin": "style.css",
       "mode": "copied",
@@ -812,8 +833,8 @@
       "path": "tests/floating-entry.test.mjs",
       "origin": "tests/floating-entry.test.mjs",
       "mode": "copied",
-      "bytes": 4105,
-      "sha256": "9df17d32f01b49ae6c9f92f0ac0df5b1687cd1acfd15e3a040a2585ec6a4f96e"
+      "bytes": 6938,
+      "sha256": "f8f37f163404ef20943481db72fb012e07efd51df5431b97181b89be41ce317a"
     },
     {
       "path": "tests/guide-dom.test.mjs",
@@ -849,6 +870,13 @@
       "mode": "copied",
       "bytes": 8388,
       "sha256": "f50fada742d79e89854c1797338f34f6c4e6d979decc68c384b16c735abcf707"
+    },
+    {
+      "path": "tests/location-input-toggle-ui.test.mjs",
+      "origin": "tests/location-input-toggle-ui.test.mjs",
+      "mode": "copied",
+      "bytes": 12325,
+      "sha256": "5af4665d725039925c6805346ab8944fce241dc2a1f7ac5c36cff3c29371592b"
     },
     {
       "path": "tests/map-route-refresh.test.mjs",
@@ -973,8 +1001,8 @@
       "path": "tests/preview-shell.test.mjs",
       "origin": "tests/preview-shell.test.mjs",
       "mode": "copied",
-      "bytes": 30648,
-      "sha256": "cce0d16f95c399a57d150fb9649631d9773e615f9f49dd9cd9698b21952fcf9d"
+      "bytes": 32081,
+      "sha256": "94d7bb81e3655d2956d7dc10f444b7efd184085a588d4576ce593bfa0254f1e0"
     },
     {
       "path": "tests/qualified-injection-names.test.mjs",
@@ -1022,8 +1050,8 @@
       "path": "tests/settings-ui.test.mjs",
       "origin": "tests/settings-ui.test.mjs",
       "mode": "copied",
-      "bytes": 30910,
-      "sha256": "f19509552a73efe06e9290e199a215f1a983d61374c6ed27915410345079cb47"
+      "bytes": 31925,
+      "sha256": "0285ad6fae195623d36450b83ee9a1da323ca48cd2449f7f49e6826bfe0c2835"
     },
     {
       "path": "tests/startup-updates.test.mjs",
@@ -1054,6 +1082,27 @@
       "sha256": "2c3bced08f90322b1c37c7580bea60e96f253de294888ef1f2ce62a9908aaf37"
     },
     {
+      "path": "tests/workflow-chapters.test.mjs",
+      "origin": "tests/workflow-chapters.test.mjs",
+      "mode": "copied",
+      "bytes": 6036,
+      "sha256": "584b0f423fe008e3cc2446892e2d07101cb80b99eacdf13d6fd0644d2146d1a1"
+    },
+    {
+      "path": "tests/workflow-demo.test.mjs",
+      "origin": "tests/workflow-demo.test.mjs",
+      "mode": "copied",
+      "bytes": 6224,
+      "sha256": "25a67b1f267d70512e4b0ca05c405c796cba2936a3c36845b809607507660a22"
+    },
+    {
+      "path": "tests/workflow-tour-offer.test.mjs",
+      "origin": "tests/workflow-tour-offer.test.mjs",
+      "mode": "copied",
+      "bytes": 2144,
+      "sha256": "1d253272a4144484db5041330f83b7e146c8274691c881f3eb76211e5e236301"
+    },
+    {
       "path": "ui/browse.js",
       "origin": "ui/browse.js",
       "mode": "copied",
@@ -1064,8 +1113,8 @@
       "path": "ui/controller.js",
       "origin": "ui/controller.js",
       "mode": "copied",
-      "bytes": 11494,
-      "sha256": "faed85c12f51fe1683a3314cf877d90a7a7cfbf5af0e2bd000927ebdda2e9cfc"
+      "bytes": 11430,
+      "sha256": "8ab1a3e232644fe982b8ecc6137eb4126cad66559dfffe0b8c7f4bfb886e9c61"
     },
     {
       "path": "ui/desktop.html",
@@ -1099,8 +1148,8 @@
       "path": "ui/guide.js",
       "origin": "ui/guide.js",
       "mode": "copied",
-      "bytes": 49094,
-      "sha256": "130a2a5f2016ed59a181150b3dcde48d1bc11df070933876582abf1206765b79"
+      "bytes": 49160,
+      "sha256": "31fdae00107201458a0f49165d4b97a213e1bde7ce25bce2d7aee001abf3dfdd"
     },
     {
       "path": "ui/map-splitter.js",
@@ -1218,8 +1267,8 @@
       "path": "ui/settings.js",
       "origin": "ui/settings.js",
       "mode": "copied",
-      "bytes": 51302,
-      "sha256": "8fcf4575ef1b22e197bcd128fc094523393821f0792508506185aba9c91fdba6"
+      "bytes": 52546,
+      "sha256": "6a0b0d7b9a23462efd42aa57abcf767f0e9a39b48198f81778bd48de91365512"
     },
     {
       "path": "ui/update-indicator.js",
@@ -1227,6 +1276,41 @@
       "mode": "copied",
       "bytes": 1234,
       "sha256": "f341fd52318a24eb32eef085ad675d003f5925b7e9874e6ad8fb8bf1292d4123"
+    },
+    {
+      "path": "ui/workflow-actions.js",
+      "origin": "ui/workflow-actions.js",
+      "mode": "copied",
+      "bytes": 19422,
+      "sha256": "7854879f7bcd8b090e6feaeb90e6ddf9e80ce13192725f91feb5f15189ee07d2"
+    },
+    {
+      "path": "ui/workflow-chapters.js",
+      "origin": "ui/workflow-chapters.js",
+      "mode": "copied",
+      "bytes": 27840,
+      "sha256": "55f87f4439003676148a0cb7a5729f3a25fab593154671f53e38697bdde02841"
+    },
+    {
+      "path": "ui/workflow-tour.css",
+      "origin": "ui/workflow-tour.css",
+      "mode": "copied",
+      "bytes": 5294,
+      "sha256": "053eccc767e289a4c0f3ed8d09c26987b46f66dc3bf563f9cbbc65f31b734abf"
+    },
+    {
+      "path": "ui/workflow-tour.html",
+      "origin": "ui/workflow-tour.html",
+      "mode": "copied",
+      "bytes": 1425,
+      "sha256": "9461f87acb22d7dec82f2d2937be77fd78ea481831813cedf0e43f182ca94c73"
+    },
+    {
+      "path": "ui/workflow-tour.js",
+      "origin": "ui/workflow-tour.js",
+      "mode": "copied",
+      "bytes": 8135,
+      "sha256": "96f457bf8024c71dd25afed49b42f2e7a42f3a7f5caad3d1e5b873b029eaac4f"
     },
     {
       "path": "发布文件清单.md",

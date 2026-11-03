@@ -88,6 +88,26 @@ function settingsFixture(layout = 'portrait', extraBridge = {}) {
   };
 }
 
+test('complete demonstrations and the retained page explanations have separate usable entries', async () => {
+  for (const layout of ['desktop', 'portrait', 'mobile']) {
+    const workflowCalls = [], pageCalls = [];
+    const f = settingsFixture(layout, { workflowTour: { start: async scope => workflowCalls.push(scope) } });
+    f.ui.guide = { start: async scope => pageCalls.push(scope) };
+    try {
+      await f.view.openTab('backup');
+      await f.click('[data-settings-action="workflow-all"]');
+      f.control('[data-workflow-chapter]').value = 'bindings';
+      await f.click('[data-settings-action="workflow-chapter"]');
+      f.control('[data-page-guide-chapter]').value = 'conditions';
+      await f.click('[data-settings-action="guide-page"]');
+      await f.click('[data-settings-action="guide-all"]');
+      assert.deepEqual(workflowCalls, ['all', 'bindings']);
+      assert.deepEqual(pageCalls, ['conditions', 'all']);
+      assert.equal(f.writes.length, 0);
+    } finally { f.restore(); }
+  }
+});
+
 test('asynchronous package update notice changes only its status nodes and retains live settings drafts', async () => {
   let notify, checks = 0, summary = { available: false, checking: false, items: [] };
   const manager = { getUpdateSummary: () => summary, subscribeUpdates(fn) { notify = fn; return () => {}; }, async refreshCatalog() { checks++; } };

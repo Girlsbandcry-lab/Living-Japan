@@ -9,7 +9,7 @@ async function host(width = 1200, height = 768, inputTop = height - 120, initial
   const nodes = [], documentListeners = new Map(), subscribers = new Set();
   const windowListeners = new Map(), observers = [];
   let saved = initialSaved ? structuredClone(initialSaved) : { livingJapanSettings: {}, livingJapanUIPreferences: {}, extensionUi: { layout: 'auto', pinned: false }, customSlots: {} };
-  const control = { allowLeave: true };
+  const control = { allowLeave: true, leaveCalls: 0, workflowOpen: false };
   function element(tag) {
     const listeners = new Map();
     const node = { tag, tagName: tag.toUpperCase(), id: '', children: [], dataset: {}, style: {}, hidden: false, rect: null,
@@ -39,7 +39,7 @@ async function host(width = 1200, height = 768, inputTop = height - 120, initial
     };
     if (tag === 'iframe') {
       node.contentDocument = { activeElement: null };
-      node.contentWindow = { document: node.contentDocument, LivingJapanView: { leave: async () => control.allowLeave } };
+      node.contentWindow = { document: node.contentDocument, LivingJapanView: { leave: async () => { control.leaveCalls++; return control.allowLeave; } } };
       Object.defineProperty(node, 'clientWidth', { get: () => parseFloat(node.style.width) || parseFloat(document.getElementById('living-japan-shell')?.style.width) - 2 });
       Object.defineProperty(node, 'clientHeight', { get: () => parseFloat(node.style.height) || parseFloat(document.getElementById('living-japan-shell')?.style.height) - 2 });
     }
@@ -73,6 +73,13 @@ async function host(width = 1200, height = 768, inputTop = height - 120, initial
     loadBaseline: async () => ({ data: { defaultSettings: {}, releaseId: 'fixture' }, engine: {} }),
     addUserSlotsToData() {}, createUserStore: () => store, createSillyTavernTransport: () => ({}),
     createSession: () => ({ start: async () => {}, stop() {}, engine: {} }),
+    createWorkflowTourHost: () => ({
+      offer: async () => false,
+      start: async () => { control.workflowOpen = true; return true; },
+      isOpen: () => control.workflowOpen,
+      close() { control.workflowOpen = false; },
+      destroy() { control.workflowOpen = false; },
+    }),
     createUpdateManager: () => ({ check: async () => {} }), createCatalog: () => ({ loadIndex: async () => ({}), destroy() {} }),
   });
   const appSource = (await readFile(new URL('../src/app.js', import.meta.url), 'utf8')).replace(/^import .*;\r?\n/gm, '').replace('export async function', 'async function');
@@ -123,6 +130,27 @@ test('cancelled leave preserves the layout and does not reopen a closed workspac
   await h.document.getElementById('layoutPortrait').click();
   assert.equal(h.shell.dataset.layout, 'desktop'); assert.equal(h.shell.hidden, true);
   assert.equal(h.read().extensionUi.layout, 'auto');
+  h.bridge.destroy();
+});
+
+test('workflow presentation blocks background dismissal without leaving or replacing the live workspace', async () => {
+  const h = await host(), frame = h.shell.children[0], source = frame.src;
+  const draft = { text: 'still editing' }, saved = structuredClone(h.read());
+  frame.contentWindow.pendingDraft = draft;
+  await h.bridge.workflowTour.start('all');
+  await h.document.body.click();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(h.shell.hidden, false);
+  assert.equal(h.control.leaveCalls, 0, 'background clicks during the workflow must not ask the live draft to leave');
+  assert.equal(h.shell.children[0], frame);
+  assert.equal(frame.src, source);
+  assert.equal(frame.contentWindow.pendingDraft, draft);
+  assert.deepEqual(h.read(), saved);
+  h.bridge.workflowTour.close();
+  await h.document.body.click();
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(h.shell.hidden, true, 'ending the workflow restores normal unlocked-window dismissal');
+  assert.equal(h.control.leaveCalls, 1);
   h.bridge.destroy();
 });
 

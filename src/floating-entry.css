@@ -14,7 +14,7 @@
 #living-japan-floating-control #living-japan-open[data-enabled=false] .lj-fab-tab-frame{fill:#e1e5e3!important}
 #living-japan-floating-control[data-edge-hidden=right] #living-japan-open .lj-fab-edge-flower{right:0!important;left:auto!important}
 #living-japan-floating-control[data-edge-hidden=top] #living-japan-open .lj-fab-edge-flower,#living-japan-floating-control[data-edge-hidden=bottom] #living-japan-open .lj-fab-edge-flower{left:19.5px!important}
-#living-japan-floating-menu{position:fixed;box-sizing:border-box;display:grid;width:min(280px,calc(100vw - 16px));padding:12px;border:1px solid var(--lj-entry-line);border-radius:16px;background:var(--lj-entry-bg);color:var(--lj-entry-ink);box-shadow:0 14px 46px #14251d45;overflow:auto;overscroll-behavior:contain;color-scheme:light}
+#living-japan-floating-menu{position:fixed;box-sizing:border-box;display:grid;width:min(300px,calc(100vw - 16px));padding:12px;border:1px solid var(--lj-entry-line);border-radius:16px;background:var(--lj-entry-bg);color:var(--lj-entry-ink);box-shadow:0 14px 46px #14251d45;overflow:auto;overscroll-behavior:contain;color-scheme:light}
 #living-japan-floating-control[data-theme=night] #living-japan-floating-menu{color-scheme:dark}
 #living-japan-floating-menu[hidden],#living-japan-floating-menu [hidden]{display:none!important}
 #living-japan-floating-menu .lj-entry-menu-title{font-size:16px;font-weight:700;padding:1px 4px}
@@ -29,6 +29,18 @@
 #living-japan-floating-menu .lj-entry-switch-words small{font-size:10px;color:var(--lj-entry-muted)}
 #living-japan-floating-menu .lj-entry-switch-mark{display:flex;align-items:center;justify-content:center;flex:none;width:36px;height:22px;border-radius:14px;background:var(--lj-entry-line);color:var(--lj-entry-muted);font-size:11px;font-weight:700}
 #living-japan-floating-menu [aria-checked=true] .lj-entry-switch-mark{background:var(--lj-entry-accent);color:#fff}
+#living-japan-floating-menu .lj-entry-wrapper{padding:7px 4px 10px;border-bottom:1px solid var(--lj-entry-line);margin-bottom:3px}
+#living-japan-floating-menu .lj-entry-section-title{display:block;font-size:12px;font-weight:600;color:var(--lj-entry-muted);padding:0 4px 6px}
+#living-japan-floating-menu .lj-entry-wrapper-choices{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+#living-japan-floating-menu .lj-entry-wrapper-choice{display:flex;align-items:center;justify-content:center;gap:3px;min-width:0;min-height:40px;font-size:13px;border:1px solid var(--lj-entry-line);border-radius:7px}
+#living-japan-floating-menu .lj-entry-wrapper-choice[aria-checked=true]{background:var(--lj-entry-accent);color:#fff;border-color:var(--lj-entry-accent);font-weight:700}
+#living-japan-floating-menu .lj-entry-wrapper-mark{width:10px;font-size:11px;visibility:hidden}
+#living-japan-floating-menu .lj-entry-wrapper-choice[aria-checked=true] .lj-entry-wrapper-mark{visibility:visible}
+#living-japan-floating-menu .lj-entry-channel-title{padding:7px 8px 3px;border-top:1px solid var(--lj-entry-line);margin-top:3px}
+#living-japan-floating-menu .lj-entry-channel-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px 6px}
+#living-japan-floating-menu .lj-entry-channel-grid .lj-entry-switch{gap:5px;padding:6px;min-height:40px}
+#living-japan-floating-menu .lj-entry-channel-grid .lj-entry-switch-words strong{font-size:12px}
+#living-japan-floating-menu .lj-entry-channel-grid .lj-entry-switch-mark{width:27px;height:21px;font-size:10px}
 #living-japan-floating-menu .lj-entry-open-panel{display:block;text-align:center;font-weight:600;font-size:13px;border:1px solid var(--lj-entry-line);margin-top:7px;min-height:38px}
 #living-japan-floating-menu .lj-entry-error{color:#ba3b31;font-size:12px;padding:8px 4px 0;overflow-wrap:anywhere}
 .lj-host-entry .lj-host-button{font:inherit;color:inherit;cursor:pointer}
