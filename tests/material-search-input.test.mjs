@@ -26,7 +26,7 @@ function fixture(t) {
       removeEventListener(name) { handlers.delete(name); },
       querySelector(selector) { return node(key + '/' + selector); }, querySelectorAll: () => [],
       closest(selector) { return selector === '[data-page-root]' ? node('root') : selector === 'label' ? node(key + '/label') : null; },
-      before() {}, after() {}, append() {}, remove() {}, scrollIntoView() {},
+      before() {}, after() {}, append() {}, prepend() {}, remove() {}, scrollIntoView() {},
       async fire(name, event = {}) { await handlers.get(name)?.(event); await settle(); },
       async click(dataset) { await this.fire('click', { target: { closest: () => ({ dataset }) } }); },
     };
@@ -149,4 +149,20 @@ test('material navigation and locate consume a pending paint without resetting t
   assert.equal(f.list.innerHTML, located);
   assert.equal(f.list.writes, locatedWrites);
   assert.deepEqual(f.errors, []);
+});
+
+test('a refused material locate leaves the current list and place draft intact', async t => {
+  const f = fixture(t);
+  const draft = { id: 'place', tab: 'materials', bindings: [{ categoryId: 'draft-term', enabled: true }] };
+  f.ui.state.placeEditor = draft;
+  f.ui.showPage = async () => false;
+  const listState = structuredClone(f.ui.state.materials);
+  const rendered = f.list.innerHTML;
+
+  assert.equal(await f.view.locate('p54'), false);
+  assert.deepEqual(f.ui.state.materials, listState);
+  assert.equal(f.list.innerHTML, rendered);
+  assert.equal(f.list.scrollTop, 91);
+  assert.equal(f.ui.state.placeEditor, draft);
+  assert.deepEqual(draft.bindings, [{ categoryId: 'draft-term', enabled: true }]);
 });

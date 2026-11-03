@@ -16,7 +16,9 @@ export function createSession({ engine: initialEngine, store, context = {}, onCh
   let lastDiagnostics = null;
   let lastActualInjection = null;
   let lastPreview = null;
+  let previewSerial = 0;
   let macroContext = null;
+  let clearImportSlots = null;
   const listeners = [];
   const readContext = () => (typeof context === 'function' ? context() : context) || {};
   const messages = () => (readContext().chat || []).slice();
@@ -63,9 +65,9 @@ export function createSession({ engine: initialEngine, store, context = {}, onCh
   const ensureBodies = ids => prepareText('ensureBodies', ids);
   const ensureSummaries = ids => prepareText('ensureSummaries', ids);
 
-  async function preparePlaceRequest(requestType, selectedSettings = settings) {
+  async function preparePlaceRequest(requestType, selectedSettings = settings, chat = messages()) {
     if (!prepareUserData?.prepareRequest) return {};
-    const prepared = await prepareUserData.prepareRequest(messages(), selectedSettings, { engine, requestType });
+    const prepared = await prepareUserData.prepareRequest(chat, selectedSettings, { engine, requestType });
     if (prepared.changed) refreshCaches(true);
     return { directPlaceIds: prepared.directPlaceIds, placeMatchDiagnostics: prepared.placeMatchDiagnostics };
   }
@@ -135,17 +137,31 @@ export function createSession({ engine: initialEngine, store, context = {}, onCh
   }
 
   function onChatChanged() {
+    previewSerial++;
     currentRequest = lastDiagnostics = lastActualInjection = lastPreview = null;
     notify('chat-changed');
   }
 
   async function previewCurrent(settingsOverride) {
+    // LJ-PREVIEW-SNAPSHOT-20261103: one chat input, and an obsolete trial cannot publish a record.
+    const serial = ++previewSerial;
+    const startedAt = now();
     refreshCaches();
     const selectedSettings = engine.normalizeSettings(settingsOverride || settings);
-    const placeOptions = await preparePlaceRequest('normal', selectedSettings);
-    await prepareText('ensureAllBodies');
-    const result = engine.runEngine(messages(), selectedSettings, { ...placeOptions, requestType: 'normal', textOverrides, parentStationSelectionCache: {}, interestSelectionCache: {}, peerPlaceSelectionCache: {} });
-    lastPreview = { kind: 'preview', status: 'preview', startedAt: now(), completedAt: now(), prompt: result.prompt, packageIds: [...result.packageIds], diagnostics: { ...result.diagnostics, route: 'panel_preview', macro: '{{' + engine.data.macroName + '}}', packageIds: [...result.packageIds], previewPrompt: result.prompt }, error: null };
+    const selectedTextOverrides = textOverrides;
+    const chat = clone(messages());
+    let placeOptions;
+    try {
+      placeOptions = await preparePlaceRequest('normal', selectedSettings, chat);
+      if (serial !== previewSerial) return null;
+      await prepareText('ensureAllBodies');
+    } catch (error) {
+      if (serial !== previewSerial) return null;
+      throw error;
+    }
+    if (serial !== previewSerial) return null;
+    const result = engine.runEngine(chat, selectedSettings, { ...placeOptions, requestType: 'normal', textOverrides: selectedTextOverrides, parentStationSelectionCache: {}, interestSelectionCache: {}, peerPlaceSelectionCache: {} });
+    lastPreview = { kind: 'preview', status: 'preview', startedAt, completedAt: now(), prompt: result.prompt, packageIds: [...result.packageIds], diagnostics: { ...result.diagnostics, route: 'panel_preview', macro: '{{' + engine.data.macroName + '}}', packageIds: [...result.packageIds], previewPrompt: result.prompt }, error: null };
     notify('preview');
     return result;
   }
@@ -160,6 +176,8 @@ export function createSession({ engine: initialEngine, store, context = {}, onCh
     }
     started = true;
     try {
+      if (initialEngine.data.regionPackageMode) clearImportSlots = store.setImportSlots?.(
+        container => (initialEngine.withUserData ? initialEngine.withUserData(container) : engine).data.editableTextSlots.slots);
       if (typeof target.registerMacro === 'function') {
         target.registerMacro(engine.data.macroName, expandMacro, 'Living Japan 背景资料锚点');
         macroContext = target;
@@ -275,6 +293,9 @@ export function createSession({ engine: initialEngine, store, context = {}, onCh
   }
 
   function stop() {
+    previewSerial++;
+    clearImportSlots?.();
+    clearImportSlots = null;
     if (macroContext) macroContext.unregisterMacro?.(engine.data.macroName);
     macroContext = null;
     for (const [source, event, callback] of listeners.splice(0)) {

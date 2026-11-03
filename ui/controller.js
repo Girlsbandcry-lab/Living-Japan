@@ -7,9 +7,10 @@ import { mountDiagnostics } from './diagnostics.js';
 import { mountMap } from './map.js';
 import { mountGuide } from './guide.js';
 import { createMaterialEditor } from './material-editor.js';
-import { injectionName } from '../src/injection-names.js';
+import { injectionName, qualifiedInjectionName } from '../src/injection-names.js';
 import { mountUpdateIndicator } from './update-indicator.js';
 import { createPlaceEditor } from './place-editor.js';
+import { createPlaceMaterialNavigation } from './place-material-navigation.js';
 import { isHiddenPlace, hiddenPlaceId } from '../src/place-hidden.js';
 
 // LJ-EXT-VIEW: the approved three layouts share the same live state and operations.
@@ -29,7 +30,7 @@ const ui={bridge,layout,state:bridge.state,esc,ask,notify:status,
   get engine(){return bridge.session.engine;},
   getEntityForPackage(id){
     const p=ui.engine.data.packages.find(x=>x.id===id);if(!p)return null;
-    if(p.materialFragmentId)return {id:`fragment:${p.materialFragmentId}`,name:p.displayName,packageIds:[id],materialFragmentId:p.materialFragmentId,type:'资料片段',adminPath:[],adminNodes:[]};
+    if(p.materialFragmentId)return {id:`fragment:${p.materialFragmentId}`,name:p.displayName,packageIds:[id],materialFragmentId:p.materialFragmentId,type:ui.engine.data.materialLibrary?.fragments[p.materialFragmentId]?.ownBody?'词条正文':'资料片段',adminPath:[],adminNodes:[]};
     const known=bridge.catalog.get(p.placeId);if(known)return known;
     const custom=Object.values(bridge.store.read().customSlots).find(s=>'LJ_USER_'+encodeURIComponent(s.id)===id);
     return {id:custom?.entityId||p.placeId||`package:${id}`,legacyPlaceId:p.placeId,name:custom?.name||p.displayName,packageIds:[id],adminPath:custom?.adminPath||[],adminNodes:custom?.adminNodes||[],coordinates:custom?.coordinates||null,regionCode:custom?.regionCode||null,type:custom?.type||p.channel||'资料'};
@@ -50,13 +51,19 @@ const ui={bridge,layout,state:bridge.state,esc,ask,notify:status,
   async locateRegion(entity,packageId,editing=false){const view=ui.reader.viewState();if(editing)view.mode='edit';const located=await bridge.catalog.resolve(entity.id,{regionCode:entity.regionCode||ui.state.regionCode})||entity;ui.reader.suspend();if(!(await ui.showPage('region')))return;await modules.region.locate(located);await ui.reader.open(located,packageId,editing,view);},
   async openSettings(tab='reading',channel){if(ui.state.page!=='settings'&&!(await ui.showPage('settings')))return false;modules.settings.openTab(tab,channel);return true;},
   async selectEntity(entity,options={}){const ticket=++selectionRequest;if(!entity)return;if(entity.canonicalIndexOnly)entity=await bridge.catalog.resolve(entity.id,{regionCode:entity.regionCode})||entity;await bridge.session.ensureSummaries?.([entity]);if(ticket!==selectionRequest)return;ui.state.selected=entity;ui.state.selectedId=entity.id;await modules.map?.select?.(entity,options);},
-  async openReader(entity,packageId,editing=false){const ticket=++readerRequest;if(!entity&&packageId)entity=ui.getEntityForPackage(packageId);if(entity?.canonicalIndexOnly)entity=await bridge.catalog.resolve(entity.id,{regionCode:entity.regionCode})||entity;if(ticket!==readerRequest)return;if(entity)await ui.reader.open(entity,packageId,editing);},
-  append(entity){const name=injectionName(entity,ui.engine.data);if(!name)return;const result=bridge.append(name);ui.notify(result?.ok?'名称已追加到输入框':result?.error||'没有找到聊天输入框',result?.ok?'':'error');return result;},
+  async openReader(entity,packageId,editing=false){const ticket=++readerRequest;if(!entity&&packageId)entity=ui.getEntityForPackage(packageId);if(entity?.canonicalIndexOnly)entity=await bridge.catalog.resolve(entity.id,{regionCode:entity.regionCode})||entity;if(ticket!==readerRequest)return false;return entity?ui.reader.open(entity,packageId,editing):false;},
+  append(entity){
+    const name=injectionName(entity,ui.engine.data);if(!name)return;
+    const label=qualifiedInjectionName(entity,ui.engine.data,name),result=bridge.append(label);
+    const message=label===name&&entity?.type!=='行政区'?'名称已追加，未附带行政区':'名称已追加到输入框';
+    ui.notify(result?.ok?message:result?.error||'没有找到聊天输入框',result?.ok?'':'error');return result;
+  },
   async beginPositionPick(position){await modules.map.beginPositionPick(position);},
   async locateSavedPlace(id){const entity=await bridge.catalog.resolve(id,{regionCode:ui.state.regionCode});if(!entity)return;if(!(await ui.showPage('region')))return;await modules.region.locate(entity);},
   async setPlaceHidden(entity,value){await bridge.store.update(data=>{data.livingJapanSettings||={};const ids=data.livingJapanSettings.hiddenPlaceIds||[];data.livingJapanSettings.hiddenPlaceIds=value?[...new Set([...ids,hiddenPlaceId(entity,ui.engine.data)])]:ids.filter(id=>!isHiddenPlace(entity,[id],ui.engine.data));});await ui.refresh();},
   async refresh(){if(refreshing)return;refreshing=true;try{await bridge.session.refresh();renderTools();await modules[ui.state.page]?.render?.();ui.placeEditor?.render();}finally{refreshing=false;}},
 };
+Object.assign(ui,createPlaceMaterialNavigation(ui));
 ui.reader=createReader(ui);
 ui.materialEditor=createMaterialEditor(ui);
 ui.placeEditor=createPlaceEditor(ui);

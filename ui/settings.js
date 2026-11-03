@@ -42,6 +42,7 @@ export function mountSettings(ui) {
   if (mobile) content.closest('[data-page-root="settings"]').classList.add('mobile-settings');
   let tab = 'common', reading = null, favorites = null, readingDirty = false, favoritesDirty = false, busy = false;
   let status = '', tone = '', updateResult = updates?.getState?.() || null;
+  let backupDownload = null;
   const packManager = ui.bridge.packages?.manager;
   let packUpdates = packManager?.getUpdateSummary?.() || { available: false, items: [] }, updateLog = null, logFocus = null;
   const favoriteMatches = new Map();
@@ -124,9 +125,9 @@ export function mountSettings(ui) {
   function mapPointsHtml(value) {
     const visibility = mapPointVisibility(value), introductions = mapPointView.mode === 'introductions';
     return `<div class="lj-map-point-settings${introductions ? ' lj-peer-quota-mode' : ''}" data-map-point-settings><div class="lj-place-category-modes" aria-label="地点分类用途">${[['map', '地图显示'], ['introductions', '同级介绍']].map(([id, label]) => `<button type="button" data-place-category-mode="${id}" aria-pressed="${mapPointView.mode === id}">${label}</button>`).join('')}</div>` +
-      `<div class="lj-map-point-global"><span>${introductions ? `每类默认 ${DEFAULT_PEER_PLACE_QUOTA} 个 · 完成输入即时保存` : '适用于全部地区'}</span>${introductions ? '<span class="lj-peer-quota-hint">0 为不展开</span>' : `<div class="lj-map-point-actions">${mapPointButton('全部显示', 'data-map-point-all="show"')}${mapPointButton('全部隐藏', 'data-map-point-all="hide"')}</div>`}</div>` +
-      `<div class="lj-map-point-search"><label for="lj-map-point-search">查找分类</label><input id="lj-map-point-search" type="search" data-map-point-search value="${esc(mapPointView.query)}" placeholder="输入名称，查找所有分类" autocomplete="off">${mapPointButton('清空', `data-map-point-clear-search${mapPointView.query ? '' : ' hidden'}`)}<span data-map-point-count>${introductions ? '各类独立设置' : mapPointCount(visibility)}</span></div>` +
-      `<div data-map-point-browser>${mapPointBrowserHtml(visibility)}</div><p class="lj-map-point-note">${introductions ? '只限制同级地点的附带介绍；各类独立，不联动下级分类。收藏优先取用，普通地点随机补足。' : '只控制地图上的点和名称；目录、正文及已选地点保留。电车站、地形和生活片区沿用现有显示规则。'}</p></div>`;
+      (introductions ? '' : `<div class="lj-map-point-global"><span>适用于全部地区</span><div class="lj-map-point-actions">${mapPointButton('全部显示', 'data-map-point-all="show"')}${mapPointButton('全部隐藏', 'data-map-point-all="hide"')}</div></div>`) +
+      `<div class="lj-map-point-search"><label for="lj-map-point-search">查找分类</label><input id="lj-map-point-search" type="search" data-map-point-search value="${esc(mapPointView.query)}" placeholder="输入名称，查找所有分类" autocomplete="off">${mapPointButton('清空', `data-map-point-clear-search${mapPointView.query ? '' : ' hidden'}`)}${introductions ? '' : `<span data-map-point-count>${mapPointCount(visibility)}</span>`}</div>` +
+      `<div data-map-point-browser>${mapPointBrowserHtml(visibility)}</div><p class="lj-map-point-note">${introductions ? '只限制同级地点的附带介绍。收藏优先取用，普通地点随机补足。' : '只控制地图上的点和名称；目录、正文及已选地点保留。电车站、地形和生活片区沿用现有显示规则。'}</p></div>`;
   }
   function mapPointBrowserHtml(visibility) {
     const scope = activeMapScope(), current = activeMapGroup(), query = mapPointView.query.trim().toLowerCase(), introductions = mapPointView.mode === 'introductions';
@@ -137,12 +138,13 @@ export function mountSettings(ui) {
       .map(id => ({ id, label: labels.get(id), path: `${owner.label} · ${item.label}` }));
     const items = query ? categoryScopes().flatMap(owner => owner.groups.flatMap(item => rows(owner, item)))
       .filter(item => `${item.label} ${item.path}`.toLowerCase().includes(query)) : rows(scope, current);
-    const quotaControl = item => `<div class="lj-peer-quota-control"><label><input type="number" min="0" step="1" inputmode="numeric" data-peer-place-quota="${esc(item.id)}" value="${esc(quotaDrafts.has(item.id) ? quotaDrafts.get(item.id) : quotas[item.id] ?? DEFAULT_PEER_PLACE_QUOTA)}" aria-label="${esc(item.label)}同级介绍数量"${quotaErrors.has(item.id) ? ' aria-invalid="true"' : ''}><span>个</span></label>${quotaErrors.has(item.id) ? '<small role="alert">请输入 0 或正整数</small>' : ''}</div>`;
+    // LJ-PEER-QUOTA-HINTS-20261103: explain group, row limit and unspecialized entries beside their controls.
+    const quotaControl = item => `<div class="lj-peer-quota-control"><label><input type="number" min="0" step="1" inputmode="numeric" data-peer-place-quota="${esc(item.id)}" value="${esc(quotaDrafts.has(item.id) ? quotaDrafts.get(item.id) : quotas[item.id] ?? DEFAULT_PEER_PLACE_QUOTA)}" aria-label="${esc(item.label)}同级介绍数量" aria-describedby="lj-peer-quota-limit-hint"${quotaErrors.has(item.id) ? ' aria-invalid="true"' : ''}><span>个</span></label>${quotaErrors.has(item.id) ? '<small role="alert">请输入 0 或正整数</small>' : ''}</div>`;
     return `<div class="lj-map-point-tabs" aria-label="地点类型">${categoryScopes().map(item => `<button type="button" data-map-point-select-scope="${item.id}" aria-pressed="${item.id === scope.id}">${esc(item.label)}</button>`).join('')}</div>` +
       `<div class="lj-map-point-browser${query ? ' searching' : ''}"><nav class="lj-map-point-groups" aria-label="分类组" data-map-point-scroll="groups"><span>选择分类</span>${scope.groups.map(item => `<button type="button" data-map-point-select-group="${item.id}" aria-pressed="${item.id === current.id}"><span>${esc(item.label)}</span><small>${groupCount(item)}</small></button>`).join('')}</nav>` +
       `<div class="lj-map-point-content"><div class="lj-map-point-select"><label for="lj-map-point-group-select">选择分类</label><select id="lj-map-point-group-select" data-map-point-group-select>${scope.groups.map(item => `<option value="${item.id}"${item.id === current.id ? ' selected' : ''}>${esc(item.label)}　${groupCount(item)}</option>`).join('')}</select></div>` +
-      `<div class="lj-map-point-heading"><div><strong>${esc(query ? `“${mapPointView.query.trim()}”的分类结果` : current.label)}</strong><small>${query ? `共 ${items.length} 类 · 跨全部分类查找` : introductions ? `${current.categoryIds.length} 类 · 数量互不联动` : `已显示 ${count(current)} / ${current.categoryIds.length} 类`}</small></div>${query || introductions ? '' : `<div class="lj-map-point-actions">${mapPointButton('本组显示', `data-map-point-toggle-group="${current.id}" data-map-point-value="show"`)}${mapPointButton('本组隐藏', `data-map-point-toggle-group="${current.id}" data-map-point-value="hide"`)}</div>`}</div>` +
-      `<div class="lj-map-point-results" data-map-point-scroll="categories" tabindex="0" aria-label="${introductions ? '分类介绍数量' : '分类开关'}列表"><div class="lj-map-point-grid">${items.length ? items.map(item => `<div class="lj-map-point-row"><span>${esc(item.label)}${query ? `<small>${esc(item.path)}</small>` : ''}</span>${introductions ? quotaControl(item) : `<button type="button" class="${switchClass(visibility[item.id])}" data-map-point-category="${item.id}" aria-label="在地图显示${esc(item.label)}" aria-pressed="${visibility[item.id]}"></button>`}</div>`).join('') : '<p class="lj-map-point-empty">没有找到相应分类，换个名称试试。</p>'}</div></div></div></div>`;
+      `<div class="lj-map-point-heading"><div><strong>${esc(query ? `“${mapPointView.query.trim()}”的分类结果` : current.label)}</strong><small>${query ? `共 ${items.length} 类 · 跨全部分类查找` : introductions ? `${current.categoryIds.length} 项 · 本组不设总名额` : `已显示 ${count(current)} / ${current.categoryIds.length} 类`}</small></div>${introductions ? `<div class="lj-peer-quota-legend" id="lj-peer-quota-limit-hint"><small>每行上限（默认 ${DEFAULT_PEER_PLACE_QUOTA}）</small><small>0＝不介绍 · 自动保存</small></div>` : query ? '' : `<div class="lj-map-point-actions">${mapPointButton('本组显示', `data-map-point-toggle-group="${current.id}" data-map-point-value="show"`)}${mapPointButton('本组隐藏', `data-map-point-toggle-group="${current.id}" data-map-point-value="hide"`)}</div>`}</div>` +
+      `<div class="lj-map-point-results" data-map-point-scroll="categories" tabindex="0" aria-label="${introductions ? '分类介绍数量' : '分类开关'}列表"><div class="lj-map-point-grid">${items.length ? items.map(item => `<div class="lj-map-point-row"><span>${esc(item.label)}${introductions && metroParentIds.has(item.id) ? '<small>只管未归入子类的地点</small>' : ''}${query ? `<small>${esc(item.path)}</small>` : ''}</span>${introductions ? quotaControl(item) : `<button type="button" class="${switchClass(visibility[item.id])}" data-map-point-category="${item.id}" aria-label="在地图显示${esc(item.label)}" aria-pressed="${visibility[item.id]}"></button>`}</div>`).join('') : '<p class="lj-map-point-empty">没有找到相应分类，换个名称试试。</p>'}</div></div></div></div>`;
   }
   function rememberMapPointView() {
     content.querySelectorAll('[data-map-point-scroll]').forEach(node => { mapPointView.scrolls[node.dataset.mapPointScroll] = node.scrollTop; });
@@ -202,17 +204,19 @@ export function mountSettings(ui) {
     const placeEdits = state.placeEdits || {};
     const backupNote = `完整用户备份包含地点个人修改、自建地点、正文修改稿与空位、资料词条、收藏与隐藏，以及全部设置；不包含内置资料。当前地点修改 ${Object.keys(placeEdits.overrides || {}).length} 处，自建地点 ${Object.keys(placeEdits.created || {}).length} 处。资料登记：${materialCount}。`;
     const file = '<input type="file" accept="application/json,.json" data-settings-file hidden>';
+    const download = backupDownload ? `<a class="lj-update-link" data-settings-backup-download href="${esc(backupDownload.url)}" download="${esc(backupDownload.filename)}">保存备份文件</a>` : '';
+    const exportControls = button('export', '导出用户备份') + download;
     const updateButtons = button('check-update', '检查程序更新') + button('update', '更新程序', false, !updateResult?.available ? 'disabled' : '');
     const programRow = row('程序框架', '<div class="lj-update-controls"><p class="lj-update-line" data-program-update-note role="status"></p><div class="lj-update-actions">' + updateButtons + '</div></div>');
     const packageRow = ui.bridge.packages ? row('地区资料', '<div class="lj-update-controls"><p class="lj-update-line" data-package-update-note role="status"></p><div class="lj-update-actions">' + button('check-pack-updates', '检查资料更新') + button('region-packs', '地区资料包') + button('update-log', '更新记录') + '</div><div class="lj-update-copy"><p class="lj-update-small" data-update-summary></p><p class="lj-update-small" data-update-notice></p></div></div>') : '';
     const guideParts = GUIDE_CHAPTERS.map(({id,label}) => button(`guide-${id}`, label)).join('');
     const orphanList = `<ul>${Object.entries(overrides.orphans).map(([key, item]) => `<li>${esc(item.packageId || key)} · ${esc(key)}</li>`).join('')}</ul>`;
-    if (desktop) return group('用户资料备份', `${Object.keys(overrides.records).length} 段修改稿 · ${Object.keys(overrides.orphans).length} 段未对应`, row('导出用户备份', button('export', '导出用户备份'), backupNote) + row('导入用户备份', button('import', '导入备份') + file, '导入前先预览将要合并和覆盖的内容。')) +
+    if (desktop) return group('用户资料备份', `${Object.keys(overrides.records).length} 段修改稿 · ${Object.keys(overrides.orphans).length} 段未对应`, row('导出用户备份', `<div class="lj-update-actions">${exportControls}</div>`, backupNote) + row('导入用户备份', button('import', '导入备份') + file, '导入前先预览将要合并和覆盖的内容。')) +
       group('扩展更新', '保留用户保存', programRow + packageRow) +
-      group('使用说明与操作引导', '七篇详细导览，可随时结束', `<div class="set12-guide"><p>可完整顺读或按分篇查看；只阅读并略过实践也可以，不会替你保存或改开关。</p><div class="set12-guidefull"><div><strong>重新观看完整引导</strong><small>地图 → 地区 → 编辑 → 资料 → 地点设置 → 诊断 → 读取备份</small></div>${button('guide-all', '开始完整引导', true)}</div><div class="set12-partgrid lj-guide-parts">${guideParts}</div></div>`) +
+      group('使用说明与操作引导', '十篇详细导览，可随时结束', `<div class="set12-guide"><p>可完整顺读或按分篇查看；只阅读并略过实践也可以，不会替你保存或改开关。</p><div class="set12-guidefull"><div><strong>重新观看完整引导</strong><small>入口窗口 → 地图路线 → 地点浏览 → 地点编辑 → 附加资料 → 资料正文 → 条件有效词 → 设置配额 → 诊断 → 备份更新</small></div>${button('guide-all', '开始完整引导', true)}</div><div class="set12-partgrid lj-guide-parts">${guideParts}</div></div>`) +
       (Object.keys(overrides.orphans).length ? group('未对应旧稿', '仍在备份中保留', `<div class="set12-guide">${orphanList}</div>`) : '');
-    return group('备份与说明', '低频入口', row('用户资料备份', button('export', '导出用户备份') + button('import', '导入备份') + file, backupNote) +
-      programRow + packageRow + row('完整操作引导', button('guide-all', '开始完整引导', true), '七篇详细导览，可只阅读并略过实践；不会替你保存或改开关。') +
+    return group('备份与说明', '低频入口', row('用户资料备份', `<div class="lj-update-actions">${exportControls}${button('import', '导入备份')}${file}</div>`, backupNote) +
+      programRow + packageRow + row('完整操作引导', button('guide-all', '开始完整引导', true), '十篇详细导览，可随时结束；不会替你保存或改开关。') +
       row('分篇查看', `<div class="lj-guide-parts">${guideParts}</div>`, '按当前布局查看真实入口；可随时结束或重播。') + (Object.keys(overrides.orphans).length ? `<div class="set-row"><div class="set-label"><b>未对应旧稿</b></div><p>仍在备份中保留。</p>${orphanList}</div>` : ''), 'settings-backup');
   }
   function patchUpdateStatus() {
@@ -290,6 +294,11 @@ export function mountSettings(ui) {
     const target = document.getElementById('lj-settings-status');
     if (target) { target.textContent = text; target.className = `${desktop ? 'lj-status' : 'settings-status'} ${type}`; target.hidden = false; }
     ui.notify(text, type);
+  }
+  function clearBackupDownload() {
+    if (!backupDownload) return;
+    URL.revokeObjectURL(backupDownload.url);
+    backupDownload = null;
   }
   async function saving(operation, success) {
     if (busy) return false;
@@ -386,8 +395,10 @@ export function mountSettings(ui) {
       const preview = store.importBackup(await file.text()), s = preview.summary;
       const placeChanges = s.placeEditsAdded || s.placeEditsOverwritten || s.placesCreatedAdded || s.placesCreatedOverwritten
         ? `地点个人修改新增 ${s.placeEditsAdded || 0} 处、覆盖 ${s.placeEditsOverwritten || 0} 处；自建地点新增 ${s.placesCreatedAdded || 0} 处、覆盖 ${s.placesCreatedOverwritten || 0} 处。` : '';
-      const choice = await ui.ask({ title: '导入用户备份', message: `新增 ${s.added} 段，覆盖 ${s.overwritten} 段，未对应 ${s.unresolved} 段；${s.baseChanged} 段的原文基准有变化。${placeChanges}${s.materialLibraryIncluded ? `资料登记新增 ${s.materialRecordsAdded} 条，覆盖 ${s.materialRecordsOverwritten} 条（分类、地域、片段、地点及挂接）。` : ''}${s.settingsIncluded ? '此完整备份还会合并开关、偏好与自建空位。' : '此文件只导入修改稿。'}`, choices: [{ id: 'cancel', label: '取消' }, { id: 'import', label: '确认导入', primary: true }] });
-      if (choice === 'import') await saving(() => store.applyImport(preview), '用户备份已导入并读回确认');
+      const slotChanges = s.customSlotsAdded || s.customSlotsOverwritten
+        ? `自建正文空位新增 ${s.customSlotsAdded} 个、覆盖 ${s.customSlotsOverwritten} 个。` : '';
+      const choice = await ui.ask({ title: '导入用户备份', message: `新增 ${s.added} 段，覆盖 ${s.overwritten} 段，未对应 ${s.unresolved} 段；${s.baseChanged} 段的原文基准有变化。${s.unresolved ? '未对应正文会保留。' : ''}${placeChanges}${slotChanges}${s.materialLibraryIncluded ? `资料登记新增 ${s.materialRecordsAdded} 条，覆盖 ${s.materialRecordsOverwritten} 条（分类、地域、片段、地点及挂接）。` : ''}${s.settingsIncluded ? '此备份还会合并开关和个人偏好。' : ''}`, choices: [{ id: 'cancel', label: '取消' }, { id: 'import', label: '确认导入', primary: true }] });
+      if (choice === 'import') await saving(() => store.applyImport(preview), s.settingsIncluded ? '用户备份已导入并读回确认。布局和窗口位置等偏好刷新网页后生效。' : '用户备份已导入并读回确认');
     } catch (error) { message(error.message, 'error'); }
   });
   content.addEventListener('click', async event => {
@@ -437,8 +448,13 @@ export function mountSettings(ui) {
         rememberScroll();
         Object.assign(favorites[Number(target.dataset.index)], { entityId: '', name: '', displayName: '', regionCode: '' }); markDraft('favorites'); render(true);
       } else if (action === 'export') {
+        // LJ-BACKUP-DOWNLOAD-20261103: keep the generated snapshot available for a manual retry.
         const url = URL.createObjectURL(new Blob([store.exportBackup()], { type: 'application/json;charset=utf-8' }));
-        const anchor = document.createElement('a'); anchor.href = url; anchor.download = `Living-Japan-用户备份-${new Date().toISOString().slice(0, 10)}.json`; anchor.click(); setTimeout(() => URL.revokeObjectURL(url), 3000); message('用户备份已开始下载');
+        clearBackupDownload();
+        backupDownload = { url, filename: `Living-Japan-用户备份-${new Date().toISOString().slice(0, 10)}.json` };
+        rememberScroll(); render(true);
+        content.querySelector('[data-settings-backup-download]')?.click();
+        message('备份已生成。如果浏览器没有下载，可点“保存备份文件”重试。');
       } else if (action === 'import') content.querySelector('[data-settings-file]').click();
       else if (action === 'region-packs') { await ui.bridge.openPackages(); }
       else if (action === 'open-update-section') { openUpdateSection(); }
@@ -461,7 +477,7 @@ export function mountSettings(ui) {
   });
   const unsubscribePackUpdates = packManager?.subscribeUpdates?.(value => { packUpdates = value; patchUpdateStatus(); });
   const unsubscribeProgramUpdates = updates?.subscribe?.(value => { updateResult = value; patchUpdateStatus(); });
-  function destroy() { unsubscribeLocationInput?.(); unsubscribePackUpdates?.(); unsubscribeProgramUpdates?.(); heading?.removeEventListener('click', headingClick); closeUpdateLog(); }
+  function destroy() { clearBackupDownload(); unsubscribeLocationInput?.(); unsubscribePackUpdates?.(); unsubscribeProgramUpdates?.(); heading?.removeEventListener('click', headingClick); closeUpdateLog(); }
   document.defaultView?.addEventListener('unload', destroy, { once: true });
   render();
   return { render, requestLeave, openTab, destroy, hasUnsaved: () => readingDirty || favoritesDirty || quotaDrafts.size > 0 };

@@ -531,7 +531,7 @@ const isolatedRoot = {};
     if (!origin || !destination || !validTravelMode(mode) || !estimate || !finite(estimate.minutes)) return '';
     var phrase = travelModePhrase(mode, value.railPath || estimate.railPath);
     if (!phrase) return '';
-    var journey = '从' + origin.label + '处出发 ' + phrase;
+    var journey = '从 ' + origin.label + '处出发 ' + phrase;
     var modeKinds = mode === 'driving'
       ? ['famous_bridge', 'famous_expressway', 'famous_road', 'famous_tunnel', 'famous_bay', 'famous_port', 'famous_pier', 'ferry_crossing']
       : mode === 'walking' || mode === 'bicycle'

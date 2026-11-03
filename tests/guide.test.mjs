@@ -36,7 +36,7 @@ test('guide placement keeps a visible input outside the guide card in a short na
   assert(box.left >= 8 && box.left + 330 <= 422); assert(box.top >= target.bottom + 8); assert(box.top + 180 <= 475);
 });
 test('all guide chapters are reachable with unique IDs and layout-aware text', () => {
-  assert.equal(module.GUIDE_CHAPTERS.length, 7);
+  assert.equal(module.GUIDE_CHAPTERS.length, 10);
   for (const layout of ['desktop', 'portrait', 'mobile']) {
     const ui = { layout, engine: { data: { macroName: 'living_japan' } } };
     const all = module.guideStepsFor(ui);
@@ -65,7 +65,7 @@ test('missing-field guidance uses a visible entry and follows the real field whe
   ready=true;state=module.guideStepTarget(step,find);assert.equal(state.target,field);assert.equal(state.missing,false);assert.equal(state.hint,'');
 });
 test('reader guidance prioritizes a visible result button over earlier search input and leaves it clickable', () => {
-  const step=module.guideStepsFor({layout:'mobile'},'packages').find(item=>item.chapterIndex===5);
+  const step=module.guideStepsFor({layout:'mobile'},'packages').find(item=>item.key==='reader');
   const search={kind:'search'},read={kind:'read'},reader={kind:'reader'};
   let hasResult=true,opened=false;
   const find=selector=>selector==='.lj-reader-overlay'?(opened?reader:null)

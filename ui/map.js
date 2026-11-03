@@ -33,6 +33,40 @@ export function nextEndpoints(origin, destination, kind, entity) {
   return { origin: origin?.id === entity.id ? null : origin, destination: destination?.id === entity.id ? null : entity };
 }
 
+// LJ-ROUTE-ENDPOINT-REFRESH-20261103: latest catalog endpoints and their actual navigation inputs own the route cache.
+export function createRouteRefresh({ state, getLatest, loadService, onChange }) {
+  let key=null,epoch=0,dead=false,result={estimates:{},selectedEndpoints:null,status:''};
+  const input=entity=>{
+    if(!entity)return null;
+    const point=coordinates(navigationCoordinates(entity));
+    return [entity.id,entity.name||entity.label||'',entity.legacyPlaceId||'',entity.sourceIds||[],entity.allSourceIds||[],
+      entity.type||'',entity.kind||'',entity.source?.namespace||'',entity.regionCode||'',entity.regionId||'',
+      Boolean(entity.officialRail),entity.officialRail?.sourceGroupCodes||[],point?.longitude??null,point?.latitude??null];
+  };
+  const publish=value=>{result=value;onChange(result);};
+  async function refresh() {
+    if(dead)return result;
+    const latest=entity=>entity?(getLatest(entity)||entity):null;
+    const origin=state.routeOrigin=latest(state.routeOrigin),destination=state.routeDestination=latest(state.routeDestination);
+    const nextKey=JSON.stringify([input(origin),input(destination)]);
+    if(nextKey===key)return result;
+    key=nextKey;const request=++epoch;
+    publish({estimates:{},selectedEndpoints:null,status:origin&&destination?'正在读取参考耗时':'选择起点和终点后估算'});
+    if(!origin||!destination)return result;
+    try {
+      const service=await loadService();
+      if(dead||request!==epoch)return result;
+      const calculated=await service.estimateAll({origin,destination});
+      if(dead||request!==epoch)return result;
+      publish({estimates:calculated.estimates,selectedEndpoints:{origin:calculated.origin,destination:calculated.destination},status:''});
+    } catch(error) {
+      if(!dead&&request===epoch){key=null;publish({estimates:{},selectedEndpoints:null,status:error.message});}
+    }
+    return result;
+  }
+  return {refresh,snapshot:()=>result,destroy(){dead=true;++epoch;}};
+}
+
 export function toTransitEndpoint(entity, data, fields) {
   if (administrative(entity)) return null;
   const placeId = entity.legacyPlaceId || entity.id;
@@ -56,12 +90,12 @@ export function mountMap(ui) {
   local.mode ||= 'detail'; local.history ||= []; local.stash ||= []; local.menu = ''; state.regionCode ||= 'metro';
   local.regionCode ||= state.mapView?.regionCode || 'metro';
   let renderedQuery = '', splitter;
-  let map, mounting, suppressSelection = false, dead = false, timer = null, searchEpoch = 0, searchPageRequest = 0, composingInput = null, routeEpoch = 0, transitPromise, routeKey = '', estimates = {}, routeStatus = '', selectedEndpoints = null;
+  let map, mounting, suppressSelection = false, dead = false, timer = null, searchEpoch = 0, searchPageRequest = 0, composingInput = null, transitPromise, estimates = {}, routeStatus = '', selectedEndpoints = null;
   let searchState = { query: '', queryId: null, result: null, progress: null, busy: false, paging: false, counts: {} };
   const entities = new Map(), renderedSearchRows = new WeakMap(), hosts = desktop ? [$('.map7')] : [$('#mapCanvas'), $('#fullMapCanvas')];
   const surface = document.createElement('div'); surface.className = 'lj-map-surface'; surface.style.position = 'absolute'; if (desktop) surface.style.right = 'var(--edge,0px)';
   const remember = entity => { if (entity?.id) entities.set(entity.id, entity); return entity; };
-  const current = () => state.selected || catalog.get(state.selectedId) || null;
+  const current = () => catalog.get(state.selected?.id || state.selectedId) || state.selected || null;
   const resolve = async id => entities.get(id) || catalog.get(id) || await catalog.resolve(id, { regionCode: local.regionCode });
   const attr = entity => `data-map-entity="${esc(entity.id)}"`;
   // LJ-APPROVED-MAP-CONTROLS-20261030: keep final showcase button structures around the live actions.
@@ -177,20 +211,9 @@ export function mountMap(ui) {
   async function transitService() {
     return transitPromise ||= loadTransitService({ baseline: bridge.baseline, baseData: ui.engine.data, baseUrl:bridge.baseUrl, fetcher:bridge.fetcher }).catch(error => { transitPromise = null; throw error; });
   }
-  async function refreshRoute() {
-    const key = `${state.routeOrigin?.id || ''}|${state.routeDestination?.id || ''}`;
-    if (key === routeKey) return;
-    routeKey = key; const epoch = ++routeEpoch; estimates = {}; selectedEndpoints = null;
-    map?.setRoute(state.routeOrigin, state.routeDestination);
-    if (!state.routeOrigin || !state.routeDestination) { routeStatus = '选择起点和终点后估算'; renderRoute(); return; }
-    routeStatus = '正在读取参考耗时'; renderRoute();
-    try {
-      const service = await transitService();
-      const result = service.estimateAll({ origin: state.routeOrigin, destination: state.routeDestination });
-      if (dead || epoch !== routeEpoch) return;
-      estimates = result.estimates; selectedEndpoints = { origin: result.origin, destination: result.destination }; routeStatus = ''; renderRoute();
-    } catch (error) { if (epoch === routeEpoch) { routeKey = ''; routeStatus = error.message; renderRoute(); } }
-  }
+  const routeRefresh=createRouteRefresh({state,getLatest:entity=>remember(catalog.get(entity.id)||entity),loadService:transitService,
+    onChange(result){estimates=result.estimates;selectedEndpoints=result.selectedEndpoints;routeStatus=result.status;renderRoute();}});
+  const refreshRoute=()=>routeRefresh.refresh();
   function renderRoute() {
     const origin = state.routeOrigin, destination = state.routeDestination, selected = current(), mode = state.travelMode || 'public_transit', estimate = estimates[mode];
     const names = `${origin?.name || '未设起点'} → ${destination?.name || '未设终点'}`;
@@ -517,12 +540,16 @@ export function mountMap(ui) {
   document.addEventListener('click', handleClick); document.addEventListener('dblclick', doubleClick);
   document.addEventListener('change', pageChange); document.addEventListener('keydown', pageKeyDown);
   async function render() {
-    renderControls(); renderSelection(); applyFullMap(); await ensureMap(); map.setTheme(document.body.dataset.theme); await map.setPointVisibility(bridge.store.read().extensionUi?.mapPointVisibility);
+    renderControls(); renderSelection(); applyFullMap(); await ensureMap();
+    const entity = state.selected = remember(current()); if (entity) state.selectedId = entity.id;
+    suppressSelection = true;
+    try { await map.select(entity, { locate: false }); } finally { suppressSelection = false; }
+    map.setTheme(document.body.dataset.theme); await map.setPointVisibility(bridge.store.read().extensionUi?.mapPointVisibility);
     map.setHiddenPlaces(bridge.store.read().livingJapanSettings?.hiddenPlaceIds,ui.engine.data);
     if(state.placeEditor?.picker){local.full=true;if(local.mode==='schem')await map.setMode('detail');map.setPositionPick(true,state.placeEditor.picker.candidate);applyFullMap();renderPicker();}
     else{map.setPositionPick(false);surface.querySelector('[data-position-picker]')?.remove();document.body.classList.remove('lj-position-picking');}
     if (local.query.trim() && searchState.query !== local.query.trim() && timer === null && !composingInput) await search(); else renderSearch();
     await refreshRoute();
   }
-  return { render, select, locate, setRegion, setFullMap, renderBrandControl, beginPositionPick, destroy() { dead = true; invalidateSearch(); composingInput = null; splitter?.destroy(); relatedSelection.destroy(); ++routeEpoch; if (map) state.mapView = map.getView(); map?.destroy(); document.removeEventListener('click', handleClick); document.removeEventListener('dblclick', doubleClick); document.removeEventListener('change', pageChange); document.removeEventListener('keydown', pageKeyDown); } };
+  return { render, select, locate, setRegion, setFullMap, renderBrandControl, beginPositionPick, destroy() { dead = true; invalidateSearch(); composingInput = null; splitter?.destroy(); relatedSelection.destroy(); routeRefresh.destroy(); if (map) state.mapView = map.getView(); map?.destroy(); document.removeEventListener('click', handleClick); document.removeEventListener('dblclick', doubleClick); document.removeEventListener('change', pageChange); document.removeEventListener('keydown', pageKeyDown); } };
 }

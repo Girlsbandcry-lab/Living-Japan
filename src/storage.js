@@ -50,6 +50,7 @@ export function createUserStore({ transport, initialData = {}, knownSlots = null
   if (!transport?.read || !transport?.write) throw new TypeError('缺少用户文件读写接口');
   let normalizer = normalize;
   let slotSource = knownSlots;
+  let importSlotSource = null;
   let loaded = false;
   let serverSnapshot = null;
   let queue = Promise.resolve();
@@ -58,6 +59,12 @@ export function createUserStore({ transport, initialData = {}, knownSlots = null
 
   function currentSlots(container) {
     return typeof slotSource === 'function' ? slotSource(container) : slotSource;
+  }
+
+  // LJ-BACKUP-REGION-SLOTS-20261103: match imports against active packs without reclassifying saved drafts on ordinary reads.
+  function setImportSlots(resolveSlots) {
+    importSlotSource = resolveSlots;
+    return () => { if (importSlotSource === resolveSlots) importSlotSource = null; };
   }
 
   function normalizeContainer(input, { resolveTextSlots = true } = {}) {
@@ -185,14 +192,14 @@ export function createUserStore({ transport, initialData = {}, knownSlots = null
         }
         summary.materialLibraryIncluded = true;
       }
-      next.livingJapanSettings = mergeObject(next.livingJapanSettings, incoming.livingJapanSettings);
+      if (isObject(parsed.data.livingJapanSettings)) next.livingJapanSettings = mergeObject(next.livingJapanSettings, parsed.data.livingJapanSettings);
       if (isObject(parsed.data.livingJapanSettings) && Object.hasOwn(parsed.data.livingJapanSettings, 'peerPlaceQuotas')) {
         next.livingJapanSettings.peerPlaceQuotas = clone(incoming.livingJapanSettings.peerPlaceQuotas);
       }
-      next.livingJapanUIPreferences = mergeObject(next.livingJapanUIPreferences, incoming.livingJapanUIPreferences);
+      if (isObject(parsed.data.livingJapanUIPreferences)) next.livingJapanUIPreferences = mergeObject(next.livingJapanUIPreferences, parsed.data.livingJapanUIPreferences);
       // LJ-BACKUP-UI-01: restore exported UI choices; older backups leave them untouched.
       if (isObject(parsed.data.extensionUi)) next.extensionUi = mergeObject(isObject(next.extensionUi) ? next.extensionUi : {}, parsed.data.extensionUi);
-      summary.settingsIncluded = true;
+      summary.settingsIncluded = ['livingJapanSettings', 'livingJapanUIPreferences', 'extensionUi'].some(key => isObject(parsed.data[key]));
       records = Object.entries(incoming.livingJapanTextOverrides.records).map(([slotKey, item]) => ({ ...item, slotKey }));
       orphans = Object.entries(incoming.livingJapanTextOverrides.orphans).map(([slotKey, item]) => ({ ...item, slotKey }));
     } else {
@@ -200,7 +207,7 @@ export function createUserStore({ transport, initialData = {}, knownSlots = null
       orphans = parsed.orphans ?? [];
     }
     if (!Array.isArray(records) || !Array.isArray(orphans)) throw storageError('INVALID_BACKUP', '用户备份正文列表无效');
-    const slots = currentSlots(next) || {};
+    const slots = (importSlotSource ? importSlotSource(next) : currentSlots(next)) || {};
     const seen = new Set();
     for (const value of [...records, ...orphans]) {
       if (typeof value?.slotKey !== 'string' || !value.slotKey || seen.has(value.slotKey)) throw storageError('INVALID_BACKUP', '用户备份包含缺失或重复的正文槽');
@@ -209,6 +216,9 @@ export function createUserStore({ transport, initialData = {}, knownSlots = null
       const slot = slots[record.slotKey];
       if (slot && !slotMatches(slot, record)) throw storageError('INVALID_BACKUP', `正文槽归属冲突：${record.slotKey}`);
       if (!slot) {
+        const previous = next.livingJapanTextOverrides.records[record.slotKey] || next.livingJapanTextOverrides.orphans[record.slotKey];
+        if (previous && !slotMatches(previous, record)) throw storageError('INVALID_BACKUP', `正文槽归属冲突：${record.slotKey}`);
+        delete next.livingJapanTextOverrides.records[record.slotKey];
         next.livingJapanTextOverrides.orphans[record.slotKey] = record;
         summary.unresolved += 1;
       } else {
@@ -229,7 +239,7 @@ export function createUserStore({ transport, initialData = {}, knownSlots = null
     if (!next) return Promise.reject(storageError('INVALID_BACKUP', '请先预览此备份，再确认导入'));
     return update(() => clone(next), { expectedRevision: preview.baseRevision }).then(result => { previews.delete(preview); return result; });
   }
-  return { load, read, update, setKnownSlots, setNormalizer, exportBackup, importBackup, previewImport: importBackup, applyImport, subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); } };
+  return { load, read, update, setKnownSlots, setImportSlots, setNormalizer, exportBackup, importBackup, previewImport: importBackup, applyImport, subscribe(fn) { listeners.add(fn); return () => listeners.delete(fn); } };
 }
 
 function encodeUtf8Base64(text) {

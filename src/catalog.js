@@ -641,7 +641,7 @@ export function createCatalog({ baseData = {}, baseUrl, fetcher = globalThis.fet
     }
     const signature = JSON.stringify([...nextPlaces].sort(([a], [b]) => a.localeCompare(b)));
     if (signature === personalSignature) return;
-    for (const [id, entity] of entities) if (entity.personalPlace) entities.delete(id);
+    for (const [id, entity] of entities) if (entity.personalPlace && !Object.hasOwn(nextEdits.created, id)) entities.delete(id);
     personalPlaces.clear();
     for (const [id, entity] of nextPlaces) personalPlaces.set(id, entity);
     personalSignature = signature;

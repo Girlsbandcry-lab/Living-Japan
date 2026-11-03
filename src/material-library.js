@@ -1,4 +1,4 @@
-import { BUILTIN_MATERIAL_CATEGORIES, MATERIAL_REGIONS } from './material-catalog.js';
+import { BUILTIN_MATERIAL_CATEGORIES, MATERIAL_LAYER_LABELS, MATERIAL_REGIONS, defaultMaterialConditions } from './material-catalog.js';
 import { VENUE_MATERIAL_CATEGORIES } from './venue-material-catalog.js';
 import { canonicalPlaceContext, placeIdentityIds, personalPlaceRecord } from './place-identities.js';
 import { chainPlaceIdentity, chainPlaceTriggers } from './chain-place-names.js';
@@ -9,9 +9,22 @@ const object = value => value && typeof value === 'object' && !Array.isArray(val
 const maps = ['categories', 'regions', 'fragments', 'places', 'bindings'];
 const emptyHash = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
 export const materialPackageId = id => 'LJ_FRAGMENT_' + encodeURIComponent(id);
+export const materialLayerGroupId = layer => 'LJ_MATERIAL_LAYER_' + layer;
+export function isPlaceBodyPackage(item) {
+  return Boolean(item && !item.materialFragmentId &&
+    (item.placeId || item.canonicalPlaceId || item.sourceObjectId || item.userSlotId || item.administrativeControlGroupIds?.length));
+}
 export const materialGroupId = (id, regionId = '') => 'LJ_MATERIAL_' + encodeURIComponent(regionId) + '/' + encodeURIComponent(id);
 export const materialRegionGroupId = id => 'LJ_MATERIAL_REGION_' + encodeURIComponent(id);
 export const materialCategoryNodeId = (id, regionId = '') => 'material:' + encodeURIComponent(regionId) + ':' + encodeURIComponent(id);
+// LJ-MATERIAL-OWN-BODY-20261103: category text has stable fragment slots, independent from its branch and children.
+export const materialOwnFragmentId = (categoryId, regionId = '') => '@own/' + encodeURIComponent(categoryId) + '/' + encodeURIComponent(regionId);
+// LJ-UNIVERSAL-20261103: unrestricted text owns a separate scope, never a place's geographic region.
+export const MATERIAL_ANY_REGION_ID = '@any';
+const unrestrictedRegion = { id: MATERIAL_ANY_REGION_ID, name: '不限地域', parentId: null };
+export const materialRegionRows = library => [unrestrictedRegion, ...Object.values(library.regions)];
+export const materialRegionPath = (library, id) => id === MATERIAL_ANY_REGION_ID ? [unrestrictedRegion] : regionPath(library, id);
+export const isUniversalMaterial = fragment => fragment?.regionId === MATERIAL_ANY_REGION_ID && !Object.values(fragment.conditions || {}).some(value => Array.isArray(value) ? value.length : Boolean(value));
 
 export function normalizeMaterialLibrary(raw = {}) {
   if (!object(raw)) throw new Error('资料登记必须是有效对象');
@@ -67,6 +80,7 @@ const monthDay = value => { const m = String(value || '').match(/^(\d{2})-(\d{2}
 function validateConditions(c = {}) {
   if (!object(c)) throw new Error('时间条件格式无效');
   if (c.months && (!Array.isArray(c.months) || c.months.some(m => !Number.isInteger(m) || m < 1 || m > 12))) throw new Error('月份应为1至12');
+  if (c.monthParts !== undefined && (!Array.isArray(c.monthParts) || c.monthParts.some(part => !Number.isInteger(part) || part < 0 || part > 2))) throw new Error('旬应选择上旬、中旬或下旬');
   if ((c.startDate || c.endDate) && (monthDay(c.startDate) === null || monthDay(c.endDate) === null)) throw new Error('请完整填写起止月日，例如12-20和01-10');
   if ((c.startTime || c.endTime) && (clock(c.startTime) === null || clock(c.endTime) === null)) throw new Error('请完整填写起止时刻，例如22:00和02:00');
   if (c.weatherTypes && (!Array.isArray(c.weatherTypes) || c.weatherTypes.some(x => typeof x !== 'string'))) throw new Error('天气条件格式无效');
@@ -80,29 +94,44 @@ export function addMaterialLibraryToData(data, raw = {}) {
     categories: { ...Object.fromEntries(builtinCategories.map(c => [c.id, clone(c)])), ...user.categories },
     regions: { ...Object.fromEntries(MATERIAL_REGIONS.map(r => [r.id, clone(r)])), ...user.regions }
   };
+  for (const category of Object.values(library.categories)) {
+    if (category.canOwnBody === false) continue;
+    for (const regionId of category.layer === 'TN' ? materialRegionRows(library).map(region => region.id) : ['']) {
+      const id = materialOwnFragmentId(category.id, regionId);
+      const saved = user.fragments[id] || {};
+      library.fragments[id] = { regionId: 'jp', conditions: defaultMaterialConditions(category.id), ...saved,
+        id, title: category.name, categoryId: category.id, ownBody: true, familyId: '@own',
+        ...(category.layer === 'TN' ? { regionId } : {}) };
+    }
+  }
   data.materialLibrary = library;
   for (const category of Object.values(library.categories)) {
     if (!category.name?.trim() || !['TN', 'EX', 'IN', 'EV'].includes(category.layer)) throw new Error('分类缺少名称或所属资料');
     if (categoryPath(library, category.id).some(c => c.layer !== category.layer)) throw new Error('下级分类必须与上级属于同一资料类');
+    if (category.activationKeywords !== undefined) {
+      if (!Array.isArray(category.activationKeywords) || category.activationKeywords.some(word => typeof word !== 'string')) throw new Error('独立有效词应为文字列表');
+      category.activationKeywords = [...new Set(category.activationKeywords.map(word => word.trim()).filter(Boolean))];
+    }
   }
   for (const region of Object.values(library.regions)) { if (!region.name?.trim()) throw new Error('适用地域缺少名称'); regionPath(library, region.id); }
   const addGroup = (id, label, layer) => {
     if (!data.controlGroups.some(g => g.controlGroupId === id)) data.controlGroups.push({ controlGroupId: id, label, layer, kind: 'material', mode: 'material', memberPackageIds: [] });
     data.defaultSettings.groups[id] ??= true;
   };
-  for (const region of Object.values(library.regions)) addGroup(materialRegionGroupId(region.id), region.name, 'TN');
+  for (const [layer, label] of Object.entries(MATERIAL_LAYER_LABELS)) addGroup(materialLayerGroupId(layer), label, layer);
+  for (const region of materialRegionRows(library)) addGroup(materialRegionGroupId(region.id), region.name, 'TN');
   for (const category of Object.values(library.categories)) {
-    for (const regionId of category.layer === 'TN' ? Object.keys(library.regions) : ['']) addGroup(materialGroupId(category.id, regionId), category.name, category.layer);
+    for (const regionId of category.layer === 'TN' ? materialRegionRows(library).map(region => region.id) : ['']) addGroup(materialGroupId(category.id, regionId), category.name, category.layer);
   }
   for (const item of data.packages) if (item.layer === 'TN' && !item.materialFragmentId) item.legacyMaterialRegionId = 'metro';
   let order = Math.max(...data.packages.map(p => p.order || 0), 0) + 1;
   for (const fragment of Object.values(library.fragments)) {
     const category = library.categories[fragment.categoryId];
-    if (!category || !library.regions[fragment.regionId] || !fragment.title?.trim()) throw new Error('片段缺少名称、分类或适用地域');
+    if (!category || (fragment.regionId !== MATERIAL_ANY_REGION_ID && !library.regions[fragment.regionId]) || !fragment.title?.trim()) throw new Error('片段缺少名称、分类或适用地域');
     validateConditions(fragment.conditions);
     const id = materialPackageId(fragment.id), slotKey = 'P/' + id;
     const controls = categoryPath(library, category.id).map(c => materialGroupId(c.id, category.layer === 'TN' ? fragment.regionId : ''));
-    if (category.layer === 'TN') controls.unshift(...regionPath(library, fragment.regionId).filter(r => r.id !== 'jp' || fragment.regionId === 'jp').map(r => materialRegionGroupId(r.id)));
+    if (category.layer === 'TN') controls.unshift(...materialRegionPath(library, fragment.regionId).filter(r => r.id !== 'jp' || fragment.regionId === 'jp').map(r => materialRegionGroupId(r.id)));
     const item = { id, order: order++, layer: category.layer, uiGroupId: controls.at(-1), displayName: fragment.title, parentGroup: category.name,
       matchMode: 'link_only', activation: null, directTriggers: [], conditionalTriggers: [], links: [], triggerLinks: [], controlGroupIds: controls,
       body: '', bodySha256: emptyHash, allowEmptyBody: true, materialFragmentId: fragment.id, categoryId: category.id, regionId: fragment.regionId,
@@ -112,6 +141,13 @@ export function addMaterialLibraryToData(data, raw = {}) {
     data.editableTextSlots.staticCount += 1; data.editableTextSlots.slotCount += 1;
     data.bodyRecords.push({ bodyRecordId: item.bodyRecordId, packageId: id, ownerPlaceId: null, builtinStatus: 'empty', editableSlotKey: slotKey, fallbackRecordIds: [], bodySha256: emptyHash });
     for (const control of controls) data.controlGroups.find(g => g.controlGroupId === control)?.memberPackageIds.push(id);
+  }
+  for (const item of data.packages) {
+    if (!Object.hasOwn(MATERIAL_LAYER_LABELS, item.layer) || item.materialAnchor || isPlaceBodyPackage(item)) continue;
+    const root = materialLayerGroupId(item.layer);
+    const previous = item.controlGroupIds?.length ? item.controlGroupIds : item.uiGroupId ? [item.uiGroupId] : [];
+    item.controlGroupIds = [...new Set([...previous, root])];
+    data.controlGroups.find(group => group.controlGroupId === root).memberPackageIds.push(item.id);
   }
   for (const place of Object.values(library.places)) {
     if (!place.name?.trim()) throw new Error('已挂地点缺少名称');
@@ -136,6 +172,10 @@ export function addMaterialLibraryToData(data, raw = {}) {
 
 function conditionsMatch(c = {}, state = {}) {
   if (c.months?.length && (!state.date || !c.months.includes(state.date.month))) return false;
+  if (c.monthParts?.length) {
+    const date = state.date, part = date?.day ? (date.day <= 10 ? 0 : date.day <= 20 ? 1 : 2) : date?.monthPart;
+    if (!Number.isInteger(part) || !c.monthParts.includes(part)) return false;
+  }
   const inRange = (value, start, end) => start <= end ? value >= start && value <= end : value >= start || value <= end;
   if (c.startDate) {
     if (!state.date?.day || !inRange(state.date.month * 100 + state.date.day, monthDay(c.startDate), monthDay(c.endDate))) return false;
@@ -149,9 +189,10 @@ function conditionsMatch(c = {}, state = {}) {
   return true;
 }
 
-export function selectMaterialFragments({ data, settings, recognizedPackages = [], placeContexts = [], storyState = {}, resolveBody, blockReason }) {
+export function selectMaterialFragments({ data, settings, recognizedPackages = [], placeContexts = [], keywordMatches = [], storyState = {}, resolveBody, blockReason }) {
   const library = data.materialLibrary;
-  const diagnostics = { contexts: [], selected: [], skipped: [], legacyClimateSkipped: [] };
+  // LJ-MATERIAL-STATUS-20261103: permission and applicability are recorded independently of selection.
+  const diagnostics = { contexts: [], keywordMatches, evaluated: [], selected: [], skipped: [], legacyClimateSkipped: [] };
   if (!library || !settings.masterEnabled) return { packages: [], diagnostics, legacyAllowed: () => true };
   const contextMap = new Map();
   const contexts = [...placeContexts, ...recognizedPackages.filter(p => ['EX', 'IN'].includes(p.layer) && p.placeId).map(p => ({ package: p }))];
@@ -170,34 +211,73 @@ export function selectMaterialFragments({ data, settings, recognizedPackages = [
     else if (!source.attachedOnly) contextMap.get(entityId).attachedOnly = false;
   }
   diagnostics.contexts = [...contextMap.values()];
+  const keywordsByCategory = new Map(keywordMatches.map(match => [match.categoryId, match]));
+  const directContexts = diagnostics.contexts.filter(context => !context.attachedOnly);
+  const keywordContexts = keywordMatches.length ? (directContexts.length ? directContexts : [{ entityId: null, climateRegionId: null }]).map(context => ({ ...context, keywordOnly: true })) : [];
+  const packagesByFragment = new Map(data.packages.filter(item => item.materialFragmentId).map(item => [item.materialFragmentId, item]));
+  const ownBodies = new Map();
+  const fragments = [], emptyOwnByCategory = new Map();
+  for (const fragment of diagnostics.contexts.length || keywordMatches.length ? Object.values(library.fragments) : []) {
+    if (!fragment.ownBody) { fragments.push(fragment); continue; }
+    const effective = resolveBody(packagesByFragment.get(fragment.id));
+    if (effective.body?.trim()) {
+      ownBodies.set(fragment.id, effective);
+      fragments.push(fragment);
+    } else {
+      if (!emptyOwnByCategory.has(fragment.categoryId)) emptyOwnByCategory.set(fragment.categoryId, []);
+      emptyOwnByCategory.get(fragment.categoryId).push(fragment);
+    }
+  }
   const picked = new Map();
-  for (const context of diagnostics.contexts) {
+  for (const context of [...diagnostics.contexts, ...keywordContexts]) {
     const regionIds = context.climateRegionId && library.regions[context.climateRegionId] ? regionPath(library, context.climateRegionId).map(r => r.id) : [];
-    const bindings = Object.values(library.bindings).filter(b => context.sourceIds.includes(b.entityId));
+    const bindings = context.keywordOnly ? [] : Object.values(library.bindings).filter(b => context.sourceIds.includes(b.entityId));
+    const emptyAttached = [...new Set(context.keywordOnly ? keywordsByCategory.keys() : bindings.map(binding => binding.categoryId))].flatMap(id => emptyOwnByCategory.get(id) || []);
     const candidates = [];
-    for (const fragment of Object.values(library.fragments)) {
+    for (const fragment of [...fragments, ...emptyAttached]) {
       const category = library.categories[fragment.categoryId];
       const links = bindings.filter(b => b.categoryId === fragment.categoryId);
-      const regional = category.layer === 'TN' && categoryPath(library, category.id).some(c => c.autoRegional === true);
-      if ((!regional || context.attachedOnly) && !links.length) continue;
-      let reason = !regionIds.includes(fragment.regionId) ? 'region_mismatch' : !conditionsMatch(fragment.conditions, storyState || {}) ? 'time_or_weather_mismatch' : null;
+      const attached = links.length > 0;
+      const keywordMatch = context.keywordOnly ? keywordsByCategory.get(category.id) : null;
+      const keyword = Boolean(keywordMatch);
+      const regionMatches = fragment.regionId === MATERIAL_ANY_REGION_ID || regionIds.includes(fragment.regionId);
+      const emptyOwn = fragment.ownBody && !ownBodies.has(fragment.id);
+      if (emptyOwn && ((!attached && !keyword) || !regionMatches)) continue;
+      const regional = !context.keywordOnly && !attached && !context.attachedOnly && category.layer === 'TN' && categoryPath(library, category.id).some(c => c.autoRegional === true);
+      if (!attached && !regional && !keyword) continue;
+      const item = packagesByFragment.get(fragment.id);
+      const blocker = (attached && (context.canonical ? links.some(b => b.enabled === false) : !links.some(b => b.enabled !== false))) ? 'binding_off' : blockReason(item);
+      const reason = !regionMatches ? 'region_mismatch' : !conditionsMatch(fragment.conditions, storyState || {}) ? 'time_or_weather_mismatch' : null;
+      const evidence = { id: fragment.id, packageId: item.id, entityId: context.entityId, regionId: fragment.regionId,
+        attached, regional, keyword, ...(keyword ? { trigger: keywordMatch.trigger, source: keywordMatch.source } : {}),
+        universal: isUniversalMaterial(fragment), allowed: !blocker, blocker, conditionsMatched: !reason, reason: reason || blocker };
+      diagnostics.evaluated.push(evidence);
+      if (emptyOwn) {
+        evidence.reason ||= 'empty_body';
+        continue;
+      }
       if (reason) { diagnostics.skipped.push({ id: fragment.id, entityId: context.entityId, reason }); continue; }
-      candidates.push({ fragment, links, regional, specificity: regionIds.indexOf(fragment.regionId) });
+      candidates.push({ fragment, item, links, evidence, specificity: regionIds.indexOf(fragment.regionId) });
     }
     const families = new Map();
     for (const item of candidates) {
-      const key = item.fragment.familyId ? item.fragment.categoryId + '/' + item.fragment.familyId : item.fragment.id;
+      const key = JSON.stringify(item.fragment.ownBody ? ['own', item.fragment.categoryId]
+        : item.fragment.familyId ? ['family', item.fragment.categoryId, item.fragment.familyId] : ['fragment', item.fragment.id]);
       if (!families.has(key) || families.get(key).specificity < item.specificity) families.set(key, item);
     }
-    for (const { fragment, links, regional } of families.values()) {
-      const item = data.packages.find(p => p.materialFragmentId === fragment.id);
-      const reason = (links.length && (context.canonical ? links.some(b => b.enabled === false) : !links.some(b => b.enabled !== false))) ? 'binding_off' : blockReason(item);
+    const winners = new Set(families.values());
+    for (const candidate of candidates) {
+      if (!winners.has(candidate)) candidate.evidence.reason = 'alternate_version';
+    }
+    for (const { fragment, item, links, evidence } of winners) {
+      const reason = evidence.blocker;
       if (reason) { diagnostics.skipped.push({ id: fragment.id, entityId: context.entityId, reason }); continue; }
-      const effective = resolveBody(item);
-      if (!effective.body?.trim()) { diagnostics.skipped.push({ id: fragment.id, entityId: context.entityId, reason: 'empty_body' }); continue; }
+      const effective = ownBodies.get(fragment.id) || resolveBody(item);
+      if (!effective.body?.trim()) { evidence.reason = 'empty_body'; diagnostics.skipped.push({ id: fragment.id, entityId: context.entityId, reason: evidence.reason }); continue; }
       if (!picked.has(item.id)) picked.set(item.id, { ...item, body: effective.body, materialFragmentId: fragment.id,
         ...(effective.custom ? { textOverride: { custom: true, slotKey: effective.slotKey, calendarSegmentId: effective.calendarSegmentId, baseChanged: effective.baseChanged } } : {}) });
-      diagnostics.selected.push({ id: fragment.id, packageId: item.id, entityId: context.entityId, regionId: fragment.regionId, regional, bindingIds: links.filter(b => b.enabled !== false).map(b => b.id) });
+      diagnostics.selected.push({ id: fragment.id, packageId: item.id, entityId: context.entityId, regionId: fragment.regionId,
+        attached: evidence.attached, regional: evidence.regional, keyword: evidence.keyword, bindingIds: links.filter(b => b.enabled !== false).map(b => b.id) });
     }
   }
   function legacyAllowed(item) {

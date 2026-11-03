@@ -190,5 +190,5 @@ export function createFloatingEntry({ store, open, document = globalThis.documen
     if (instances.get(document) === destroy) instances.delete(document);
   }
   instances.set(document, destroy);
-  return { button, control, destroy, setError, setOpen(value) { isOpen = Boolean(value); scheduleIdle(); } };
+  return { button, control, destroy, setError, openMenu, setOpen(value) { isOpen = Boolean(value); scheduleIdle(); } };
 }

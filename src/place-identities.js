@@ -192,8 +192,8 @@ export async function createCanonicalContextPreparer({ data, catalog, index, bas
   prepare.browseNode = id => catalog.browseNode(id);
   if (overture) prepare.prepareRequest = async (messages, settings, { engine, requestType = 'normal' } = {}) => {
     const before = revision;
-    if (settings.masterEnabled === false || settings.layers?.EX === false) return { directPlaceIds: [], changed: false,
-      placeMatchDiagnostics: { directPlaceIds: [], matches: [], stopReason: settings.masterEnabled === false ? 'master_disabled' : 'ex_disabled' } };
+    if (settings.masterEnabled === false) return { directPlaceIds: [], changed: false,
+      placeMatchDiagnostics: { directPlaceIds: [], matches: [], stopReason: 'master_disabled' } };
     const entries = engine.collectChannelEntries(messages, 'EX', settings.historyDepth, requestType, settings);
     const candidates = await catalog.activationCandidates(entries.map(entry => entry.text));
     let storyState = null;
