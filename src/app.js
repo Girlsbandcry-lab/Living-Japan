@@ -229,6 +229,7 @@ export async function startLivingJapan({ baseUrl, context: suppliedContext, stor
     const view = frame?.contentWindow?.LivingJapanView;
     if (view?.leave && !(await view.leave())) return;
     await geometrySave;
+    view?.ui?.guide?.close();
     if (shell) shell.hidden = shellViewport.hidden = true;
     entry.setOpen?.(false);
   }
@@ -265,11 +266,12 @@ export async function startLivingJapan({ baseUrl, context: suppliedContext, stor
     append(name) { return session.engine.appendPlaceNameToChatInput(document, session.engine.outputTextForScript(name,session.engine.normalizeSettings(store.read().livingJapanSettings))); },
     appendTraffic(text) { return session.engine.appendTrafficToChatInput(document, session.engine.outputTextForScript(text,session.engine.normalizeSettings(store.read().livingJapanSettings))); },
     open, close, mountWindowDrag,
+    guideHost: { document, openQuickMenu: () => entry.openMenu?.() },
     metrics: { startupMs: Math.round(performance.now() - started), baselineRelease: baseline.data.releaseId },
     destroy() { session.stop(); catalog.destroy?.(); document.removeEventListener('click',outsideClick); unsubscribeStore(); inputObserver?.disconnect(); window.removeEventListener('resize',sizeFrame); window.visualViewport?.removeEventListener('resize',sizeFrame); window.visualViewport?.removeEventListener('scroll',sizeFrame); shellViewport?.remove(); if(!suppliedEntry)entry.destroy(); listeners.clear(); },
   };
   globalThis.LivingJapanBridge = bridge;
-  const outsideClick=event=>{if(shell&&!shell.hidden&&!pinned&&!shellViewport.contains(event.target)&&!entry.control?.contains(event.target)&&!button.contains(event.target)&&!event.target.closest?.('[data-lj-region-panel]'))void close();};
+  const outsideClick=event=>{if(shell&&!shell.hidden&&!pinned&&!shellViewport.contains(event.target)&&!entry.control?.contains(event.target)&&!button.contains(event.target)&&!event.target.closest?.('[data-lj-region-panel],[data-lj-guide]'))void close();};
   document.addEventListener('click',outsideClick);
   const unsubscribeStore=store.subscribe(data => { pinned=isPinned(data); emit(); });
   return bridge;

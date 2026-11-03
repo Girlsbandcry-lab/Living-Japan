@@ -6,6 +6,30 @@ export const MATERIAL_LAYER_LABELS = {
   EV: '节庆与活动',
 };
 
+// LJ-EVENT-DATE-DEFAULTS-20261103: initial writing windows shared by event bodies and new fragments.
+const eventDateDefaults = new Map(Object.entries({
+  'ev.calendar.new-year': { months: [1], monthParts: [0] },
+  'ev.calendar.coming-of-age': { months: [1], monthParts: [0, 1] },
+  'ev.calendar.setsubun': { months: [2], monthParts: [0] },
+  'ev.calendar.hina-matsuri': { startDate: '02-21', endDate: '03-10' },
+  'ev.calendar.equinox': { months: [3, 9], monthParts: [1, 2] },
+  'ev.calendar.childrens-day': { startDate: '04-25', endDate: '05-10' },
+  'ev.calendar.tanabata': { months: [7, 8], monthParts: [0] },
+  'ev.calendar.obon': { months: [7, 8], monthParts: [1] },
+  'ev.calendar.moon-viewing': { months: [9, 10] },
+  'ev.calendar.shichi-go-san': { months: [10, 11] },
+  'ev.calendar.year-end': { months: [12], monthParts: [2] },
+  'ev.calendar.christmas': { months: [12] },
+  'ev.calendar.halloween': { months: [10] },
+  'ev.traditional.setsubun': { months: [2], monthParts: [0] },
+  'ev.traditional.new-year': { startDate: '12-21', endDate: '01-10' },
+}));
+
+export function defaultMaterialConditions(categoryId) {
+  const conditions = eventDateDefaults.get(categoryId);
+  return conditions ? structuredClone(conditions) : {};
+}
+
 const family = (id, name, layer, children, options = {}) => [
   { id, name, parentId: null, layer, ...options },
   ...children.map(([suffix, label, parentId = id]) => ({ id: `${id}.${suffix}`, name: label, parentId, layer })),

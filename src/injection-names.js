@@ -2,6 +2,7 @@ import { canonicalPlaceContext, placeIdentityIds } from './place-identities.js';
 import { placeDetailPackageIds } from './place-metadata.js';
 import { chainPlaceIdentity } from './chain-place-names.js';
 import { isRailStation, presentStation } from './station-presentation.js';
+import { placeAdministrativeIdentity } from './place-admin-context.js';
 
 // LJ-INJECTION-NAME-Q09: UI activation text shares identity-aware names without registering new macro triggers.
 const unique = values => [...new Set(values.filter(value => typeof value === 'string' && value.trim()).map(value => value.trim()))];
@@ -46,9 +47,15 @@ export function injectionName(entity, data = {}) {
   return fallback;
 }
 
+export function qualifiedInjectionName(entity, data = {}, name = injectionName(entity, data)) {
+  const admin = name && placeAdministrativeIdentity(entity, data);
+  const administrative = admin && (entity.id === admin.id || entity.type === '行政区');
+  return admin?.label && !administrative ? admin.label + ' ' + name : name;
+}
+
 export function injectionEndpoints(endpoints, selection, data = {}) {
   return Object.fromEntries(Object.entries(endpoints).map(([key, value]) => {
     if (!['origin', 'destination'].includes(key) || !value) return [key, value];
-    return [key, { ...value, label: injectionName(selection[key], data) || value.label }];
+    return [key, { ...value, label: qualifiedInjectionName(selection[key], data) || value.label }];
   }));
 }

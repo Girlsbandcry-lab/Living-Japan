@@ -196,6 +196,16 @@ body[data-layout="desktop"] #ljMapPage .lj-reader-overlay{width:var(--side)}
 .lj-diagnostic-narrow .mobile-diag-search input{flex:1;width:0;min-width:0;min-height:32px;padding:5px 7px}
 .lj-diagnostic-narrow .mobile-diag-search .btn{min-height:32px;padding:2px 6px}
 .lj-diagnostic-narrow>.diag-scroll{position:relative;inset:auto;flex:1;min-height:0;overflow:auto;overscroll-behavior:contain}
+.lj-diagnostic-reading-summary{padding:9px 16px;border-bottom:1px solid var(--line);background:var(--surface-alt);overflow-wrap:anywhere}
+.lj-diagnostic-reading-summary h3{margin:0 0 5px;font-size:12px}
+.lj-diagnostic-reading-summary dl{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) minmax(0,1.5fr);gap:6px 14px;margin:0}
+.lj-diagnostic-reading-summary dt,.lj-diagnostic-reading-summary small{color:var(--muted);font-size:11px}
+.lj-diagnostic-reading-summary dd{margin:1px 0 0;font-size:12px;line-height:1.45}
+.lj-diagnostic-reading-summary small{display:block}
+.lj-diagnostic-reading-place dd>div+div{margin-top:4px}
+.lj-diagnostic-narrow .lj-diagnostic-reading-summary{padding:7px 10px}
+.lj-diagnostic-narrow .lj-diagnostic-reading-summary dl{grid-template-columns:repeat(2,minmax(0,1fr))}
+.lj-diagnostic-narrow .lj-diagnostic-reading-place{grid-column:1/-1}
 .lj-diagnostic-narrow .lj-diagnostic-result{display:flex;width:100%;align-items:center;gap:8px;min-height:55px;padding:8px 10px;border:0;border-bottom:1px solid var(--line);border-radius:0;background:var(--panel);text-align:left}
 .lj-diagnostic-narrow .lj-diagnostic-result:hover{background:var(--hover)}
 .lj-diagnostic-narrow .lj-diagnostic-result .grow{flex:1;min-width:0}
@@ -245,3 +255,14 @@ body[data-theme="night"] .device .search-results,body[data-theme="night"] .devic
 .lj-update-log article h4{margin:0 0 6px;font-size:14px}
 .lj-update-log article p{margin:6px 0}
 .lj-update-log details>p{white-space:pre-wrap}
+.lj-dialog.lj-condition-dialog{max-width:560px}
+.lj-condition-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.lj-condition-field{grid-column:1/-1;min-width:0;overflow-wrap:anywhere}
+.lj-condition-field.half{grid-column:auto}
+.lj-condition-field[hidden]{display:none}
+.lj-condition-field>label{display:block;font-size:14px;line-height:1.5}
+.lj-condition-field input,.lj-condition-field select{margin:6px 0 0;min-height:36px;color:inherit}
+.lj-condition-field input[type=checkbox]{min-height:0}
+.lj-condition-field fieldset{min-width:0;font-size:14px}
+.lj-condition-dialog .lj-dialog-actions{margin-top:16px}
+@media(max-width:600px){.lj-condition-grid{grid-template-columns:minmax(0,1fr)}.lj-condition-field.half{grid-column:1/-1}.lj-condition-field input,.lj-condition-field select{font-size:16px}}

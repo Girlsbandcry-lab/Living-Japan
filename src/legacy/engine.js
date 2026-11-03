@@ -1,5 +1,5 @@
 // LJ-EXT-LEGACY-ENGINE
-import { selectMaterialFragments } from '../material-library.js';
+import { selectMaterialFragments, MATERIAL_ANY_REGION_ID } from '../material-library.js';
 import { createLivingAreaExpansion, renderLivingAreaExpansion } from '../living-area-expansion.js';
 import { MATERIAL_LAYER_LABELS } from '../material-catalog.js';
 import { placeIntroduction } from '../place-metadata.js';
@@ -8,6 +8,7 @@ import { chooseRelatedIntroductions } from '../related-place-selection.js';
 import { normalizePeerPlaceQuotas } from '../peer-place-selection.js';
 import { normalizeFavoritePlaceIds } from '../place-favorites.js';
 import { normalizeHiddenPlaceIds, isHiddenPlace } from '../place-hidden.js';
+import { createAdministrativePlaceMatcher } from '../place-admin-context.js';
 
 export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
   var TEXT_CONVERTER = TEXT_SCRIPT.createConverter(DATA.textConversion || {});
@@ -256,6 +257,7 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
     return digits[text] || null;
   }
 
+  // LJ-MONTHPART-20261103: preserve date precision; explicit parts select calendar segments without inventing a day.
   function parseDateState(value) {
     var text = normalizeText(value);
     var candidates = [];
@@ -275,17 +277,17 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
     collect(/((?:19|20)\d{2})[年\-/.](\d{1,2})[月\-/.](\d{1,2})(?:日|号)?/g, function (match) {
       return { year: Number(match[1]), month: Number(match[2]), day: Number(match[3]), specificity: 3 };
     });
-    collect(/(?:^|[^\d])(\d{1,2})月(\d{1,2})(?:日|号)/g, function (match) {
+    collect(/(?<!\d)(\d{1,2})月(\d{1,2})(?:日|号)/g, function (match) {
       return { year: null, month: Number(match[1]), day: Number(match[2]), specificity: 2 };
     });
     collect(/(十一|十二|十|[一二三四五六七八九])月([一二三四五六七八九十]{1,3})(?:日|号)/g, function (match) {
       return { year: null, month: parseChineseNumber(match[1]), day: parseChineseNumber(match[2]), specificity: 2 };
     });
-    collect(/(?:^|[^\d])(\d{1,2})月(?!\d)/g, function (match) {
-      return { year: null, month: Number(match[1]), day: null, specificity: 1 };
+    collect(/(?<!\d)(?:((?:19|20)\d{2})年)?(\d{1,2})月(?!\d)(?:\s*(上旬|中旬|下旬|初|中|末))?/g, function (match) {
+      return { year: match[1] ? Number(match[1]) : null, month: Number(match[2]), day: null, partText: match[3] || '', specificity: match[1] ? 2 : 1 };
     });
-    collect(/(十一|十二|十|[一二三四五六七八九])月/g, function (match) {
-      return { year: null, month: parseChineseNumber(match[1]), day: null, specificity: 1 };
+    collect(/(?:((?:19|20)\d{2})年)?(十一|十二|十|[一二三四五六七八九])月(?:\s*(上旬|中旬|下旬|初|中|末))?/g, function (match) {
+      return { year: match[1] ? Number(match[1]) : null, month: parseChineseNumber(match[2]), day: null, partText: match[3] || '', specificity: match[1] ? 2 : 1 };
     });
     candidates = candidates.filter(function (item) {
       return item.month >= 1 && item.month <= 12 && (item.day === null || (item.day >= 1 && item.day <= 31));
@@ -300,17 +302,16 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
     var month = selected.month;
     var day = selected.day;
     var monthPart = null;
-    var suffix = text.slice(selected.index, Math.min(text.length, selected.end + 8));
-    if (/月初|上旬/.test(suffix)) monthPart = 0;
-    else if (/月中|中旬/.test(suffix)) monthPart = 1;
-    else if (/月末|下旬/.test(suffix)) monthPart = 2;
-    else if (day !== null) monthPart = day <= 10 ? 0 : (day <= 20 ? 1 : 2);
-    else monthPart = 1;
+    if (day !== null) monthPart = day <= 10 ? 0 : (day <= 20 ? 1 : 2);
+    else if (/^(初|上旬)$/.test(selected.partText)) monthPart = 0;
+    else if (/^(中|中旬)$/.test(selected.partText)) monthPart = 1;
+    else if (/^(末|下旬)$/.test(selected.partText)) monthPart = 2;
     return {
       year: selected.year,
       month: month,
       day: day,
       monthPart: monthPart,
+      precision: day !== null ? 'day' : monthPart !== null ? 'month_part' : 'month',
       raw: selected.raw.trim(),
       index: selected.index,
       end: selected.end
@@ -461,7 +462,13 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
   function dateWindowMatches(date, window) {
     if (!date || !window) return false;
     var day = date.day === null || date.day === undefined ? 15 : date.day;
-    var value = date.month * 100 + day;
+    var firstDay = day, lastDay = day;
+    if ((date.day === null || date.day === undefined) && Number.isInteger(date.monthPart)) {
+      var monthEnd = new Date(Date.UTC(Number.isInteger(date.year) ? date.year : 2000, date.month, 0)).getUTCDate();
+      firstDay = [1, 11, 21][date.monthPart];
+      lastDay = [10, 20, monthEnd][date.monthPart];
+    }
+    var first = date.month * 100 + firstDay, last = date.month * 100 + lastDay;
     var startMonth = Number(window.startMonth || (window.start && window.start.month));
     var startDay = Number(window.startDay || (window.start && window.start.day) || 1);
     var endMonth = Number(window.endMonth || (window.end && window.end.month));
@@ -469,8 +476,8 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
     if (!(startMonth >= 1 && startMonth <= 12 && endMonth >= 1 && endMonth <= 12)) return false;
     var start = startMonth * 100 + startDay;
     var end = endMonth * 100 + endDay;
-    if (start <= end) return value >= start && value <= end;
-    return value >= start || value <= end;
+    if (start <= end) return first >= start && last <= end;
+    return first >= start || last <= end;
   }
 
   function anyDateWindowMatches(date, windows) {
@@ -498,6 +505,11 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
 
   function findCalendarSegment(date) {
     if (!date || !Array.isArray(DATA.calendarSegments)) return null;
+    if ((date.day === null || date.day === undefined) && Number.isInteger(date.monthPart)) {
+      return DATA.calendarSegments.find(function (segment) {
+        return Number(segment.month) === Number(date.month) && Number(segment.dayStart) === [1, 11, 21][date.monthPart];
+      }) || null;
+    }
     var day = date.day === null || date.day === undefined ? 15 : date.day;
     return DATA.calendarSegments.find(function (segment) {
       var afterStart = segment.dayStart === null || segment.dayStart === undefined || day >= Number(segment.dayStart);
@@ -1633,13 +1645,34 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
     return hasAnyTrigger(source, parents);
   }
 
+  // LJ-SHORT-PLACE-20261103: a one-character place needs its own name boundary, not a letter inside ordinary prose.
+  function shortPlaceNameAllows(text, found, item) {
+    if (!(item.sourceObjectId || item.placeKind === 'station') || Array.from(normalizeText(found.trigger)).length !== 1) return true;
+    var source = normalizeText(text);
+    var before = source.slice(0, found.index);
+    var after = source.slice(found.end);
+    var leftBoundary = !before || /[\s\p{P}\p{S}]$/u.test(before);
+    var rightBoundary = !after || /^[\s\p{P}\p{S}]/u.test(after);
+    if (leftBoundary && rightBoundary) return true;
+    var namedPosition = /(?:去(?:了)?|到(?:了)?|在|从|從|往|向|回到?|返回|前往|来到|來到|抵达|抵達|路过|路過|经过|經過|住在|搬到|位于|位於|进入|進入|离开|離開|走进|走進|身处|身處|地点(?:是)?|地點(?:是)?|场景(?:在|是)?|場景(?:在|是)?|目的地(?:是)?|店名(?:是|叫)?|名叫|约在|約在)\s*[:：]?\s*$/u.test(before);
+    var placeTail = /^\s*(?:(?:店|馆|館|楼|樓)(?=$|[\s\p{P}\p{S}]|的|里|裡|内|內|门口|門口|附近|周边|周邊)|附近|周边|周邊|门口|門口|里面|裡面|内部|內部|外面|的(?:入口|出口|门口|門口|附近|内部|內部))/u.test(after);
+    var stationTail = item.placeKind === 'station' && /^\s*(?:站|駅|车站|車站)/u.test(after);
+    var visitTail = /^\s*(?:吃|喝|用餐|看展|散步)/u.test(after);
+    return (leftBoundary || namedPosition) && (rightBoundary || placeTail || stationTail || (namedPosition && visitTail));
+  }
+
   // LJ001-V3-STATION-NAME-GUARD: a station suffix must not borrow the verb in a person's standing action.
-  function findNamedDirectTriggerDetailed(text, triggers, exclusions, item) {
+  function findNamedDirectTriggerDetailed(text, triggers, exclusions, item, contextText) {
     var source = normalizeText(text);
     var searchable = source;
     var found = findDirectTriggerDetailed(searchable, triggers, exclusions);
-    if (item.placeKind !== 'station') return found;
     while (found) {
+      if (!shortPlaceNameAllows(contextText === undefined ? source : contextText, found, item)) {
+        searchable = source.slice(0, found.index);
+        found = findDirectTriggerDetailed(searchable, triggers, exclusions);
+        continue;
+      }
+      if (item.placeKind !== 'station') return found;
       if (!stationRoadNameAllows(source, found)) {
         searchable = source.slice(0, found.index);
         found = findDirectTriggerDetailed(searchable, triggers, exclusions);
@@ -1688,7 +1721,7 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
     return hasAnyTrigger(pre + '◇' + post, related);
   }
 
-  function directMatchesForEntry(entry, layer, storyState, candidates) {
+  function directMatchesForEntry(entry, layer, storyState, candidates, fullNameSpans) {
     var result = [];
     (candidates || channelPackages(layer)).forEach(function (item) {
       var exclusions = ((DATA.directTriggerExclusions || {})[item.id] || []).concat(item.directTriggerExclusions || item.triggerExclusions || []);
@@ -1700,12 +1733,20 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
       var fullFound = namedIdentity
         ? findNamedDirectTriggerDetailed(entry.text, item.fullTriggers || [], exclusions, item)
         : null;
+      if (fullNameSpans && fullFound) {
+        var earlierFull = fullFound, fullSearch = normalizeText(entry.text);
+        while (earlierFull) {
+          fullNameSpans.push({ entry: entry, position: earlierFull.index, end: earlierFull.end });
+          fullSearch = fullSearch.slice(0, earlierFull.index);
+          earlierFull = findNamedDirectTriggerDetailed(fullSearch, item.fullTriggers || [], exclusions, item, entry.text);
+        }
+      }
       var aliasTriggers = item.aliasTriggers && item.aliasTriggers.length ? item.aliasTriggers : (item.directTriggers || []);
       var aliasSearch = entry.text;
-      var aliasFound = findNamedDirectTriggerDetailed(aliasSearch, aliasTriggers, exclusions, item);
+      var aliasFound = findNamedDirectTriggerDetailed(aliasSearch, aliasTriggers, exclusions, item, entry.text);
       while (namedIdentity && aliasFound && !namedAliasContextAllows(entry.text, aliasFound, item)) {
         aliasSearch = normalizeText(aliasSearch).slice(0, aliasFound.index);
-        aliasFound = findNamedDirectTriggerDetailed(aliasSearch, aliasTriggers, exclusions, item);
+        aliasFound = findNamedDirectTriggerDetailed(aliasSearch, aliasTriggers, exclusions, item, entry.text);
       }
       var fullOwnsAlias = fullFound && aliasFound && fullFound.index <= aliasFound.index && fullFound.end >= aliasFound.end;
       var found = !fullFound ? aliasFound : !aliasFound || fullOwnsAlias || fullFound.end >= aliasFound.end ? fullFound : aliasFound;
@@ -1731,6 +1772,7 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
     var sharedRegionalAliases = {};
     result.forEach(function (match) {
       if (!match.item.regionId) return;
+      if ((layer === 'EX' || layer === 'IN') && (match.item.sourceObjectId || match.item.placeKind === 'station')) return;
       var key = normalizeText(match.trigger) + '|' + match.position + '|' + match.triggerEnd;
       if (!sharedRegionalAliases[key]) sharedRegionalAliases[key] = [];
       sharedRegionalAliases[key].push(match);
@@ -1812,9 +1854,33 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
       return compareMatchPriority(left, right) ||
         Number(right.triggerTier === 'full') - Number(left.triggerTier === 'full') || left.item.order - right.item.order;
     });
-    var winner = eligible[0];
+    var latest = eligible[0];
+    var latestGroup = latest ? eligible.filter(function (match) {
+      return compareMatchPriority(match, latest) === 0 && match.triggerTier === latest.triggerTier;
+    }) : [];
+    var fullNameSpans = [];
+    entries.forEach(function (entry) { directMatchesForEntry(entry, layer, storyState, candidates, fullNameSpans); });
+    var administrative = createAdministrativePlaceMatcher(entries, candidates || channelPackages(layer), DATA, fullNameSpans), rejected = [];
+    var paired = latestGroup.filter(function (match) {
+      if (!(match.item.sourceObjectId || match.item.placeKind === 'station')) return true;
+      var pairing = administrative.pair(match.item, match.entry, match.position, match.triggerEnd, match);
+      if (pairing.matched) { match.administrativePair = pairing; return true; }
+      rejected.push({ id: match.item.id, displayName: match.item.displayName, trigger: match.trigger, reason: pairing.reason,
+        administrativeId: pairing.administrativeId, source: sourceSummary(match.entry), administrativeSource: sourceSummary(pairing.evidence?.entry) });
+      return false;
+    });
+    result.administrativeRejections = rejected;
+    if (!paired.length && rejected.length) result.stopReason = rejected[0].reason;
+    var winner = paired[0];
     function identity(match) { return match.item.canonicalPlaceId || match.item.placeId || match.item.sourceObjectId || match.item.id; }
-    result.matches = winner ? eligible.filter(function (match) { return identity(match) === identity(winner); }) : [];
+    var tied = winner?.administrativePair ? paired.filter(function (match) {
+      return match.administrativePair?.administrativeId === winner.administrativePair.administrativeId &&
+        compareMatchPriority(match, winner) === 0 && match.triggerTier === winner.triggerTier;
+    }) : [];
+    if (new Set(tied.map(identity)).size > 1) {
+      result.ambiguousPlaceIds = Array.from(new Set(tied.map(identity))); result.stopReason = 'ambiguous_named_place'; winner = null;
+    }
+    result.matches = winner ? paired.filter(function (match) { return identity(match) === identity(winner); }) : [];
     result.suppressedMatches = matches.filter(function (match) { return !result.matches.includes(match); }).map(function (match) {
       return Object.assign(matchSummary(match), {
         suppressionReason: eligible.includes(match) ? 'later_valid_place' : 'covered_by_full_name',
@@ -1824,7 +1890,7 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
     return result;
   }
 
-  function resolveNonTimeChannelCandidates(entries, layer, storyState, candidates) {
+  function resolveNonTimeChannelCandidates(entries, layer, storyState, candidates, localCompositeOnly) {
     var inspected = [];
     var references = {};
     var pendingComposite = null;
@@ -1837,7 +1903,11 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
         if (!references[id]) references[id] = entryReferences[id];
       });
       var matches = directMatchesForEntry(entry, layer, storyState, candidates);
-      if (!pendingComposite && matches.length && (layer === 'EX' || layer === 'IN')) {
+      if (!localCompositeOnly && !pendingComposite && matches.length && (layer === 'EX' || layer === 'IN')) {
+        var localComposites = (candidates || channelPackages(layer)).filter(function (item) { return item.locationComposite; }).flatMap(function (item) {
+          return resolveNonTimeChannelCandidates([entry], layer, storyState, [item], true).matches.filter(function (match) { return match.reason === 'composite_location'; });
+        });
+        matches = matches.concat(localComposites);
         matches.forEach(function (match) {
           if (references[match.item.id] && references[match.item.id].entry !== entry) {
             match.reason = 'conditional_reference';
@@ -1858,10 +1928,21 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
           if (/[a-z0-9]/u.test(normalizedEntry.charAt(core.index - 1)) || /[a-z0-9]/u.test(normalizedEntry.charAt(core.end))) return null;
           if (/^\s*(?:\(\s*)?[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}a-z0-9·・_ -]{1,20}(?:本店|分店|店)/u.test(normalizedEntry.slice(core.end))) return null;
         }
-        return core ? { item: item, core: core, entry: entry, entryIndex: index } : null;
+        if (!core) return null;
+        return { item: item, core: core, entry: entry, entryIndex: index };
       }).filter(Boolean).sort(function (left, right) {
         return right.core.index - left.core.index;
       });
+      if (!pendingComposite && (layer === 'EX' || layer === 'IN') && compositeCores.length > 1) {
+        var leading = compositeCores.filter(function (candidate) { return candidate.core.index === compositeCores[0].core.index && candidate.core.end === compositeCores[0].core.end; });
+        if (leading.length > 1) {
+          var branches = leading.map(function (candidate) { return resolveNonTimeChannelCandidates(entries.slice(index), layer, storyState, [candidate.item]); });
+          var complete = branches.filter(function (branch) { return branch.matches.length; });
+          var combined = complete.flatMap(function (branch) { return branch.matches; });
+          var inspectedBranches = new Set(branches.flatMap(function (branch) { return branch.inspected; }));
+          return Object.assign({}, complete[0] || branches[0], { matches: combined, inspected: entries.filter(function (candidate) { return inspected.includes(candidate) || inspectedBranches.has(candidate); }) });
+        }
+      }
       if (!pendingComposite && compositeCores.length) {
         pendingComposite = compositeCores[0];
         pendingFallback = matches.slice();
@@ -1906,7 +1987,7 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
           };
           var merged = [];
           (pendingFallback || []).concat([compositeMatch]).forEach(function (match) {
-            if (!merged.some(function (existing) { return existing.item.id === match.item.id; })) merged.push(match);
+            if (!merged.some(function (existing) { return existing.item.id === match.item.id && existing.position === match.position && existing.triggerEnd === match.triggerEnd; })) merged.push(match);
           });
           merged.sort(function (left, right) {
             if ((left.triggerEnd || 0) !== (right.triggerEnd || 0)) return (right.triggerEnd || 0) - (left.triggerEnd || 0);
@@ -2003,7 +2084,8 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
       selectedEntry: sourceSummary(result.selectedEntry),
       qualifierEntry: sourceSummary(result.qualifierEntry),
       regionalBarrier: result.regionalBarrier || null,
-      suppressedMatches: result.suppressedMatches || []
+      suppressedMatches: result.suppressedMatches || [],
+      administrativeRejections: result.administrativeRejections || [], ambiguousPlaceIds: result.ambiguousPlaceIds || []
     };
   }
 
@@ -2027,6 +2109,34 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
     };
   }
 
+  // LJ-MATERIAL-KEYWORDS-20261103: term keywords reuse channel sources without entering place competition.
+  function collectMaterialKeywordMatches(rawMessages, settings, requestType) {
+    var categories = Object.values(DATA.materialLibrary?.categories || {}).filter(function (category) { return category.activationKeywords?.length; });
+    var matches = [];
+    DATA.layerOrder.forEach(function (layer) {
+      var terms = categories.filter(function (category) { return category.layer === layer; });
+      if (!terms.length) return;
+      var entries = collectChannelEntries(rawMessages, layer, settings.historyDepth, requestType, Object.assign({}, settings, { skipUserLocationInput: false }));
+      if (layer === 'TN') entries = entries.map(function (entry) {
+        return Object.assign({}, entry, { text: maskTrafficDurationForTimeChannel(entry.text), diagnosticText: entry.text });
+      });
+      var remaining = new Set(terms.map(function (category) { return category.id; }));
+      for (var entry of entries) {
+        var entryMatches = [];
+        terms.forEach(function (category) {
+          if (!remaining.has(category.id)) return;
+          var found = findTriggerDetailed(entry.text, category.activationKeywords);
+          if (!found) return;
+          entryMatches.push({ categoryId: category.id, layer: layer, trigger: found.trigger, position: found.index, triggerEnd: found.end, entry: entry, source: sourceSummary(entry) });
+          remaining.delete(category.id);
+        });
+        matches.push(...entryMatches);
+        if (layer !== 'TN' && entryMatches.length || !remaining.size) break;
+      }
+    });
+    return matches;
+  }
+
   function matchSummary(match) {
     var result = {
       id: match.item.id,
@@ -2039,6 +2149,10 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
       triggerTier: match.triggerTier || null,
       derived: Boolean(match.derived),
       sourceField: match.sourceField || null
+    };
+    if (match.administrativePair) result.administrativePair = {
+      id: match.administrativePair.administrativeId, label: match.administrativePair.administrativeLabel,
+      trigger: match.administrativePair.evidence?.trigger || null, source: sourceSummary(match.administrativePair.evidence?.entry)
     };
     if (match.referenceTrigger) {
       result.referenceTrigger = match.referenceTrigger;
@@ -2470,6 +2584,13 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
     var textOverrides = normalizeTextOverrides(options && options.textOverrides);
     var livingExpansion = options && Array.isArray(options.directPlaceIds)
       ? createLivingAreaExpansion(DATA, options.directPlaceIds, settings, options) : null;
+    function placeAwareBlockReason(item) {
+      var reason = packageBlockReason(item, settings);
+      if (reason || !livingExpansion || !item.placeId || item.materialFragmentId) return reason;
+      if (settings.namedPlaceBodiesEnabled === false) return 'named_places_off';
+      var placeId = canonicalPlaceContext(item.placeId, DATA)?.id || item.placeId;
+      return item.layer === 'EX' ? livingExpansion.placeTextBlockers.get(placeId) || null : null;
+    }
     var requestType = options && options.requestType ? options.requestType : 'normal';
     var diagnostics = {
       requestType: requestType,
@@ -2569,6 +2690,11 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
         state = timeResult.state;
         restoredTimeState = state;
         diagnostics.restoredStoryState = clone(state);
+        var calendarSegment = findCalendarSegment(state.date);
+        diagnostics.calendarSelection = calendarSegment ? {
+          segmentId: calendarSegment.id, label: calendarSegment.label,
+          monthOnlyFallback: state.date.precision === 'month'
+        } : null;
         stateSources = {};
         Object.keys(timeResult.sources).forEach(function (field) {
           stateSources[field] = sourceSummary(timeResult.sources[field]);
@@ -2617,7 +2743,9 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
         detected: detectedMatches.map(matchSummary),
         recognized: [],
         matched: [],
-        blocked: []
+        blocked: [],
+        administrativeRejections: channelResult?.administrativeRejections || [],
+        ambiguousPlaceIds: channelResult?.ambiguousPlaceIds || []
       };
     });
 
@@ -2738,7 +2866,7 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
     recognized.forEach(function (item, id) {
       var detail = recognizedDetails[id] || { item: item, trigger: null, reason: null, entry: null };
       if (diagnostics.channels[item.layer]) diagnostics.channels[item.layer].recognized.push(id);
-      var blockReason = packageBlockReason(item, settings);
+      var blockReason = placeAwareBlockReason(item);
       if (blockReason) {
         var blocked = Object.assign(matchSummary(detail), {
           blocker: blockReason,
@@ -2838,21 +2966,21 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
         record.status = 'injected';
       } else {
         record.status = 'blocked';
-        record.blocker = packageBlockReason(recognized.get(record.target), settings);
+        record.blocker = placeAwareBlockReason(recognized.get(record.target));
       }
       record.sourceInjected = matched.has(record.source);
       if (!record.sourceInjected && recognized.has(record.source)) {
-        record.sourceBlocker = packageBlockReason(recognized.get(record.source), settings);
+        record.sourceBlocker = placeAwareBlockReason(recognized.get(record.source));
       }
     });
 
     if (livingExpansion) {
       matched.forEach(function (item, id) {
         var placeId = item.placeId && (canonicalPlaceContext(item.placeId, DATA)?.id || item.placeId);
-        if (placeId && !livingExpansion.directIds.has(placeId)) { matched.delete(id); delete matchDetails[id]; }
+        if (placeId && (!livingExpansion.directIds.has(placeId) || placeAwareBlockReason(item))) { matched.delete(id); delete matchDetails[id]; }
       });
       DATA.packages.forEach(function (item) {
-        if (!item.placeId || item.materialFragmentId || packageBlockReason(item, settings)) return;
+        if (!item.placeId || item.materialFragmentId || placeAwareBlockReason(item)) return;
         var placeId = canonicalPlaceContext(item.placeId, DATA)?.id || item.placeId;
         if (!livingExpansion.directIds.has(placeId) || matched.has(item.id)) return;
         matched.set(item.id, item);
@@ -2987,7 +3115,9 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
       record.status = actualPackageIds.has(record.target) ? 'injected' : 'empty';
       record.sourceInjected = actualPackageIds.has(record.source);
     });
+    var materialKeywordMatches = collectMaterialKeywordMatches(rawMessages, settings, requestType);
     var materialResult = selectMaterialFragments({ data: DATA, settings: settings,
+      keywordMatches: materialKeywordMatches.map(function (match) { var { entry, ...evidence } = match; return evidence; }),
       recognizedPackages: livingExpansion ? [] : Array.from(recognized.values()),
       placeContexts: livingExpansion ? livingExpansion.materialContexts : [], storyState: restoredTimeState,
       resolveBody: function (item) { return resolveEffectiveBody(item, restoredTimeState, textOverrides); },
@@ -2996,7 +3126,7 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
     var livingOutput = livingExpansion ? renderLivingAreaExpansion(DATA, livingExpansion, actualPackages, materialResult) : null;
     if (livingOutput) {
       actualPackages = actualPackages.filter(function (item) { return livingOutput.emittedPackageIds.includes(item.id); });
-      diagnostics.livingAreaExpansion = { directPlaceIds: [...livingExpansion.directIds], placedPackageIds: livingOutput.placedPackageIds, duplicatePackageIds: livingOutput.duplicatePackageIds, peerSelections: livingExpansion.peerSelections };
+      diagnostics.livingAreaExpansion = { directPlaceIds: [...livingExpansion.directIds], placedPackageIds: livingOutput.placedPackageIds, placedMaterials: livingOutput.placedMaterials, duplicatePackageIds: livingOutput.duplicatePackageIds, peerSelections: livingExpansion.peerSelections };
     }
     diagnostics.linkedPackages.forEach(function (record) {
       var target = getPackageById(record.target), source = getPackageById(record.source);
@@ -3018,9 +3148,11 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
       .concat(materialResult.packages.filter(function (item) { return actualPackages.some(function (actual) { return actual.id === item.id; }); }).map(function (item) {
         var override = item.textOverride || {};
         if (override.custom) diagnostics.customTextOverrides.push({ id: item.id, displayName: item.displayName, slotKey: override.slotKey, calendarSegmentId: override.calendarSegmentId, baseChanged: override.baseChanged });
-        return Object.assign(matchSummary({ item: item, reason: 'material_fragment', customText: override.custom, textSlotKey: override.slotKey, textCalendarSegmentId: override.calendarSegmentId, textBaseChanged: override.baseChanged }), { layer: item.layer });
+        var keywordSelected = materialResult.diagnostics.selected.some(function (row) { return row.packageId === item.id && row.keyword; });
+        var keyword = keywordSelected ? materialKeywordMatches.find(function (match) { return match.categoryId === item.categoryId; }) : null;
+        return Object.assign(matchSummary({ ...keyword, item: item, reason: 'material_fragment', customText: override.custom, textSlotKey: override.slotKey, textCalendarSegmentId: override.calendarSegmentId, textBaseChanged: override.baseChanged }), { layer: item.layer });
       }));
-    var prompt = outputTextForScript(assemblePrompt(actualPackages, settings.wrapperMode, diagnostics.emittedNamedPlaceInterests, introductions, livingOutput), settings);
+    var prompt = outputTextForScript(assemblePrompt(actualPackages, settings.wrapperMode, diagnostics.emittedNamedPlaceInterests, introductions, livingOutput, materialResult.diagnostics), settings);
     return {
       prompt: prompt,
       packages: actualPackages,
@@ -3033,7 +3165,7 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
     return String(value).split(/\r?\n/).map(function (line) { return '> ' + line; }).join('\n');
   }
 
-  function assemblePrompt(packages, wrapperMode, interestNames, introductions, livingOutput) {
+  function assemblePrompt(packages, wrapperMode, interestNames, introductions, livingOutput, materialDiagnostics) {
     packages = packages || [];
     interestNames = interestNames || [];
     introductions = Object.assign({ own: [], parents: [], districts: [], regions: [] }, introductions);
@@ -3041,14 +3173,32 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
     var wrapper = DATA.wrappers[wrapperMode] || DATA.wrappers.background;
     // [D133-WRAPPER-LAYOUT] 外围提示与实际背景资料分层，单包正文保持原样。
     var materialSections = DATA.layerOrder.map(function (layer) {
-      var layerBodies = packages.filter(function (item) {
+      var layerPackages = packages.filter(function (item) {
         return item.layer === layer && typeof item.body === 'string' && item.body.length > 0 && !livingOutput?.placedPackageIds.includes(item.id);
-      }).map(function (item) { return item.body; });
+      });
+      var layerBodies = layerPackages.map(function (item) { return item.body; });
+      if (layer === 'TN' && materialDiagnostics) {
+        var contexts = materialDiagnostics.contexts || [], regionalBodies = new Map();
+        layerPackages.forEach(function (item) {
+          var selections = (materialDiagnostics.selected || []).filter(function (row) { return row.packageId === item.id; });
+          var selected = selections.filter(function (row) { return row.regional; });
+          var activeContexts = selected.length ? contexts.filter(function (context) { return selected.some(function (row) { return row.entityId === context.entityId; }); })
+            : contexts.filter(function (context) { return !context.attachedOnly; });
+          if (selections.some(function (row) { return row.keyword; }) && !selections.some(function (row) { return row.attached || row.regional; })) {
+            activeContexts = contexts.filter(function (context) { return selections.some(function (row) { return row.keyword && row.regionId !== MATERIAL_ANY_REGION_ID && row.entityId === context.entityId; }); });
+          }
+          var regionNames = [...new Set(activeContexts.map(function (context) { return DATA.materialLibrary?.regions[context.climateRegionId]?.name; }).filter(Boolean))];
+          var regionTitle = regionNames.join('、');
+          if (!regionalBodies.has(regionTitle)) regionalBodies.set(regionTitle, []);
+          regionalBodies.get(regionTitle).push(item.body);
+        });
+        layerBodies = [...regionalBodies].map(function (entry) { return (entry[0] ? '【' + entry[0] + '】\n' : '') + entry[1].join('\n\n'); });
+      }
       if (layer === 'EX') {
         if (introductions.regions.length) layerBodies.push('所属地区：' + (introductions.regions.length === 1
           ? introductions.regions[0].path.map(function (node) { return node.name; }).join(' › ')
           : '\n' + introductions.regions.map(function (item) { return '- ' + item.name + '：' + item.path.map(function (node) { return node.name; }).join(' › '); }).join('\n')));
-        [['街区背景', introductions.districts], ['地点简介', introductions.own], ['上级地点', introductions.parents]].forEach(function (section) {
+        [['周边街区', introductions.districts], ['地点简介', introductions.own], ['所在地区与场所', introductions.parents]].forEach(function (section) {
           if (section[1].length) layerBodies.push(section[0] + '：\n' + section[1].map(function (item) { return '- ' + item.name + '：' + item.summary; }).join('\n'));
         });
       }
@@ -3056,7 +3206,7 @@ export function createEngine(DATA, TRANSIT_MAP, TRANSIT_TIME, TEXT_SCRIPT) {
         var interests = interestNames.map(function (item) { return typeof item === 'string' ? { name: item, summary: '' } : item; });
         layerBodies.push(interests.some(function (item) { return item.summary; })
           ? '相关地点：\n' + interests.map(function (item) { return '- ' + item.name + (item.summary ? '：' + item.summary : ''); }).join('\n')
-          : '相关兴趣点：' + interests.map(function (item) { return item.name; }).join('、'));
+          : '相关地点：' + interests.map(function (item) { return item.name; }).join('、'));
       }
       var layerText = layerBodies.length ? '### ' + (MATERIAL_LAYER_LABELS[layer] || PROMPT_LAYER_LABELS[layer] || layer) + '\n' + layerBodies.join('\n\n') : '';
       return layer === 'EX' && livingOutput?.text ? [layerText, livingOutput.text].filter(Boolean).join('\n\n') : layerText;
